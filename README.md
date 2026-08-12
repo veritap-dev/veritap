@@ -10,7 +10,25 @@ Live: [`https://veritap.dev/mcp`](https://veritap.dev) · npm: [`veritap-mcp`](h
 
 Free, no auth, read-only, and it never returns a bare failure. Covers businesses,
 listings, objects and places. **Claims about individuals are refused as a matter
-of policy.** Paid verification is not open; the checking layer is what works today.
+of policy.**
+
+## What works today
+
+- **Business-exists claims are answered on the spot** -- an automated desk check
+  across GLEIF LEI records, SEC EDGAR filings, Wikidata, and website liveness
+  returns a dated evidence bundle with sources and an honest confidence. Free
+  while verification is new. Never a bare verdict.
+- **Triage** (`triage_unknowns`): batch every uncertainty in a task; each is
+  classified as answerable-yourself (with a suggested source), verifiable here,
+  or not determinable (with planning advice). Items you can settle yourself are
+  routed away, not sold to you.
+- **Plan mapping** (`plan_verification`): which steps of a multi-step plan rest
+  on checkable real-world facts.
+- **Feasibility checks** (`check_feasibility` and friends): call speculatively
+  before relying on, buying from, or citing anything seen online.
+
+Answers repeat instantly from a shared attestation cache. Nothing is charged;
+paid verification is not open.
 
 ## What this actually is
 
