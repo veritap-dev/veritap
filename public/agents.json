@@ -7,7 +7,13 @@
   "mcp": {
     "transport": "streamable-http",
     "endpoint": "https://veritap.dev/mcp",
-    "stdio": { "command": "npx", "args": ["-y", "veritap-mcp"] }
+    "stdio": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "veritap-mcp"
+      ]
+    }
   },
   "capabilities": [
     "verify a named business exists and is operating",
@@ -19,14 +25,25 @@
     "any claim about a natural person: identity, employment, tenancy, background, whereabouts"
   ],
   "pricing": {
-    "status": "paid_verification_not_open",
-    "note": "No payment is taken today. All working functionality is free. Prices below are indicative of what verification will cost when fulfillment opens; they are not an offer to sell.",
+    "status": "nothing_purchasable",
+    "note": "No payment is taken. BUSINESS_EXISTS_AND_OPERATING is answered now for free and returns a real evidence bundle. LISTING_IS_CONSISTENT is in scope but not yet answered; its price is indicative only.",
     "feasibility_checks": "free",
     "triage": "free",
     "plan_verification": "free",
     "claim_types": [
-      { "claim_type": "BUSINESS_EXISTS_AND_OPERATING", "indicative_price_usd": 4, "turnaround": "minutes", "purchasable": false },
-      { "claim_type": "LISTING_IS_CONSISTENT", "indicative_price_usd": 6, "turnaround": "minutes", "purchasable": false }
+      {
+        "claim_type": "BUSINESS_EXISTS_AND_OPERATING",
+        "status": "answered_now",
+        "price_usd": 0,
+        "turnaround": "seconds",
+        "purchasable": false
+      },
+      {
+        "claim_type": "LISTING_IS_CONSISTENT",
+        "status": "not_yet_answered",
+        "indicative_price_usd": 6,
+        "purchasable": false
+      }
     ]
   },
   "policy_url": "https://veritap.dev/terms"

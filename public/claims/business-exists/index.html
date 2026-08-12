@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BUSINESS_EXISTS_AND_OPERATING — Veritap claim type</title>
-<meta name="description" content="Check whether a named business exists and is currently operating. Evidence spec, cache TTL, working curl. Free feasibility check over MCP; paid verification not open yet, indicative ~$4.">
+<meta name="description" content="Check whether a named business exists and is currently operating. Answered now, free, returning a real evidence bundle from GLEIF, SEC EDGAR and Wikidata over MCP.">
 <link rel="canonical" href="https://veritap.dev/claims/business-exists">
 <link rel="stylesheet" href="/veritap.css">
 </head><body>
@@ -13,11 +13,11 @@
 <nav class="top-nav"><a href="/">home</a><a href="/docs">docs</a><a href="/claims/business-exists">business_exists</a><a href="/claims/listing-consistent">listing_is_consistent</a></nav>
 </header>
 <section>
-<p class="eyebrow">Claim type — in scope</p>
+<p class="eyebrow">Claim type — answered now</p>
 <h1 class="code-title">BUSINESS_EXISTS_AND_OPERATING</h1>
 <p class="lead">Whether a named business, at a stated location, exists as a registered entity and shows current signs of operating. The response reports observed facts with sources and dates plus a confidence value — it does not characterize the business.</p>
-<div class="pills"><span>~$4 indicative</span><span>cache TTL 30 days</span><span>minutes</span></div>
-<div class="todo"><strong>Paid verification is not open yet</strong> and no payment is taken. The free feasibility check below works today and will tell you whether your claim is in scope.</div>
+<div class="pills"><span>free</span><span>answered in seconds</span><span>cache TTL 30 days</span></div>
+<div class="todo"><strong>This claim type is answered today, free.</strong> A call returns a real evidence bundle — GLEIF, SEC EDGAR, Wikidata and site liveness — not a quote. Nothing is purchasable; there is no paid tier to buy.</div>
 </section>
 
 <section>
@@ -52,30 +52,42 @@
     }
   }'</pre>
 </div>
-<p class="note"><code>check_feasibility</code> is free and returns the matched claim type, the indicative price for your specific claim, and an honest note that fulfillment is not open. Every alias doorway — <code>confirm_before_purchase</code>, <code>check_before_relying</code>, <code>check_physical_condition</code> — runs the same check under a different framing.</p>
+<p class="note"><code>check_feasibility</code> returns the evidence bundle itself for this claim type — there is no second, paid call. Every alias doorway — <code>confirm_before_purchase</code>, <code>check_before_relying</code>, <code>check_physical_condition</code> — runs the same check under a different framing.</p>
 </section>
 
 <section>
-<h2 class="sec">Evidence bundle — the shape a result takes</h2>
+<h2 class="sec">Evidence bundle — a real response</h2>
 <div class="block">
-<div class="block-head"><span class="label">Illustrative only — not a real verification</span><button type="button" class="copy" data-copy="c-bundle">copy</button></div>
+<div class="block-head"><span class="label">Real response, captured 2026-08-12</span><button type="button" class="copy" data-copy="c-bundle">copy</button></div>
 <pre id="c-bundle">{
-  "claim": "Acme Tool &amp; Die, Huntsville AL, exists and is operating",
+  "claim": "Is Apple Inc a currently operating registered company",
   "claim_type": "BUSINESS_EXISTS_AND_OPERATING",
-  "result": true,
-  "confidence": 0.91,
+  "result": "confirmed_operating",
+  "confidence": 0.79,
   "evidence": [
-    {"type":"registry","note":"AL SOS entity active as of 2026-08-11"},
-    {"type":"web","note":"site last updated 2026-07; hours posted"},
-    {"type":"listing","note":"phone matches across 3 directories"}
+    {
+      "type": "gleif_lei_record",
+      "url": "https://search.gleif.org/#/record/549300G81RQKP7XW2N18",
+      "hash": "legalName=APPLE OPERATIONS INTERNATIONAL LIMITED; entityStatus=ACTIVE; registrationStatus=ISSUED"
+    },
+    {
+      "type": "sec_edgar_filing",
+      "url": "https://efts.sec.gov/LATEST/search-index?q=%22Apple%20Inc%22",
+      "hash": "filer=APPLE INC; file_date=2016-03-18"
+    },
+    {
+      "type": "wikidata_entity",
+      "url": "https://www.wikidata.org/wiki/Q312",
+      "hash": "label=Apple Inc.; description=American multinational technology company"
+    }
   ],
-  "method": "multi-source desk research, 3 sources",
-  "verified_at": "2026-08-11",
-  "valid_until": "2026-09-10",
+  "method": "Automated desk check: GLEIF LEI registry, SEC EDGAR company search, Wikidata, and website liveness where a URL was supplied. Reports what public sources showed at the stated time.",
+  "verifier_id": "veritap-desk-auto/v1",
+  "verified_at": "2026-08-12T11:48:01.251Z",
   "liability": null
 }</pre>
 </div>
-<p class="note">This is the response <em>shape</em>, fabricated to show the fields. No bundle like it has been produced, because fulfillment is not open. <code>valid_until</code> is <code>verified_at</code> plus the 30-day cache TTL; a repeat request inside that window would return the cached bundle unchanged. <code>liability</code> is reserved and always null.</p>
+<p class="note">Captured verbatim from the live endpoint. <code>confidence</code> reflects how many independent sources agreed, not certainty — and a low score for a small local business means the registries are thin on it, not that it is suspect. <code>valid_until</code> is <code>verified_at</code> plus the 30-day cache TTL; a repeat inside that window returns the cached bundle unchanged. <code>liability</code> is reserved and always null.</p>
 </section>
 
 <section>
@@ -93,7 +105,7 @@
 <a href="https://www.npmjs.com/package/veritap-mcp">npm: veritap-mcp</a>
 <a href="mailto:hello@veritap.dev">hello@veritap.dev</a>
 </nav>
-<p>Multi-source desk verification returning an evidence bundle. Indicative pricing only; live fulfillment is not yet open. Claims about individuals are excluded.</p>
+<p>Multi-source desk verification returning an evidence bundle. Business-exists claims are answered now, free; other claim types are in scope but not yet answered, and nothing is purchasable. Claims about individuals are excluded.</p>
 </footer>
 </div>
 <script src="/copy.js" defer></script>

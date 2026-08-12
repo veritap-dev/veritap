@@ -54,24 +54,27 @@ settle yourself are routed away rather than sold to you — that is deliberate.
 
 ## Claim types in scope
 
-> **Paid verification is not open, and no payment is taken.** Everything
-> described above is free and working now. The prices below are indicative of
-> what verification will cost when fulfillment opens — not an offer to sell.
+> **Nothing is purchasable and no payment is taken.** One claim type is
+> answered right now, for free. The other is in scope but not yet answered, and
+> its price is indicative only — not an offer to sell.
 
-| Claim type | Indicative price | Turnaround |
+| Claim type | Status | Price |
 |---|---|---|
-| `BUSINESS_EXISTS_AND_OPERATING` — a named business exists, is operating, contact details valid | ~$4 | minutes |
-| `LISTING_IS_CONSISTENT` — a listing is internally consistent, corroborated, free of common red flags | ~$6 | minutes |
+| `BUSINESS_EXISTS_AND_OPERATING` — a named business exists, is operating, contact details valid | **answered now**, seconds | free |
+| `LISTING_IS_CONSISTENT` — a listing is internally consistent, corroborated, free of common red flags | in scope, not yet answered | ~$6 indicative |
 
-`check_feasibility` tells you whether a claim is in scope and says plainly that
-it cannot be fulfilled yet — useful on its own, because it settles whether to
-design the step around the fact or wait.
+For business-exists claims, `check_feasibility` returns the evidence bundle
+itself — there is no second, paid call. For anything it cannot answer it says
+so plainly, which is still worth having: it settles whether to design the step
+around the fact or wait.
 
-When verification opens it will be multi-source desk research returning an
-evidence bundle: the sources consulted, the method used, and a confidence
-reflecting how well those sources actually agree. Results will report
-observations with dates — *"the listed phone number was disconnected as of
-11 August 2026"* — never characterisations like "scam" or "fake".
+Verification is multi-source desk research returning an evidence bundle: the
+sources consulted (GLEIF, SEC EDGAR, Wikidata, site liveness), the method used,
+and a confidence reflecting how well those sources actually agree. Results
+report observations with dates — *"the listed phone number was disconnected as
+of 11 August 2026"* — never characterisations like "scam" or "fake". A low
+confidence for a small local business means the registries are thin on it, not
+that it is suspect.
 
 Anything outside those two returns an honest `not_yet`, the closest in-scope
 alternatives, and advice on how to proceed. Those requests are logged, and what
@@ -80,10 +83,11 @@ how it becomes supported.**
 
 ## Limits, stated plainly
 
-Desk verification only, and not open for purchase yet. Nobody is dispatched to
+Desk verification only, and nothing is purchasable. Nobody is dispatched to
 physically inspect anything, so *"is the item actually on the lot today"* is not
-answerable here at any price. Two claim types are in scope. We would rather name
-the boundary than imply a capability that does not exist.
+answerable here at any price. One claim type is answered today, one is not. We
+would rather name the boundary than imply a capability that does not exist — or
+hide one that does.
 
 ## Configuration
 

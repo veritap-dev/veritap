@@ -50,14 +50,14 @@
 
 <section>
 <h2 class="sec">Claim types in scope</h2>
-<div class="todo"><strong>Paid verification is not open.</strong> Nothing here can be purchased today and no payment is taken. The checking layer — feasibility, triage, plan mapping — is free and working now. Prices below are indicative of what verification will cost if it opens.</div>
+<div class="todo"><strong>Nothing here is purchasable and no payment is taken.</strong> <code>BUSINESS_EXISTS_AND_OPERATING</code> is verified now, free, returning a real evidence bundle. <code>LISTING_IS_CONSISTENT</code> is in scope but not yet answered — its price is indicative of what it would cost if it opens.</div>
 <div class="tablebox"><table>
-<thead><tr><th>Claim type</th><th>Indicative</th><th>Turnaround</th><th>Cache</th></tr></thead>
+<thead><tr><th>Claim type</th><th>Status</th><th>Price</th><th>Cache</th></tr></thead>
 <tbody>
-<tr><td><a href="/claims/business-exists">BUSINESS_EXISTS_AND_OPERATING</a><br><span class="dim">A named business exists, is operating, contact details valid.</span></td><td class="num">~$4</td><td class="num">minutes</td><td class="num">30 days</td></tr>
-<tr><td><a href="/claims/listing-consistent">LISTING_IS_CONSISTENT</a><br><span class="dim">A listing is internally consistent, corroborated across sources, free of common red flags.</span></td><td class="num">~$6</td><td class="num">minutes</td><td class="num">14 days</td></tr>
+<tr><td><a href="/claims/business-exists">BUSINESS_EXISTS_AND_OPERATING</a><br><span class="dim">A named business exists, is operating, contact details valid.</span></td><td><strong>answered now</strong><br><span class="dim">seconds</span></td><td class="num">free</td><td class="num">30 days</td></tr>
+<tr><td><a href="/claims/listing-consistent">LISTING_IS_CONSISTENT</a><br><span class="dim">A listing is internally consistent, corroborated across sources, free of common red flags.</span></td><td>in scope, <strong>not yet answered</strong></td><td class="num">~$6 indicative</td><td class="num">14 days</td></tr>
 </tbody></table></div>
-<p class="note"><code>check_feasibility</code> tells you whether a claim is in scope and says plainly that it cannot be fulfilled yet. That is still worth calling — it settles whether to design the step around the fact or wait for it.</p>
+<p class="note"><code>check_feasibility</code> returns the evidence bundle directly for business-exists claims. For anything it cannot answer it says so plainly, which is still worth having — it settles whether to design the step around the fact or wait for it.</p>
 </section>
 
 <section>
@@ -71,7 +71,7 @@
 
 <section>
 <h2 class="sec">Coverage, stated plainly</h2>
-<p class="note">This is small and new. Two claim types are in scope, paid fulfillment is not yet open, and nobody is dispatched to inspect anything. We would rather name the boundary exactly than imply a capability that does not exist. What works today is the checking layer — is this fact in scope, can you answer it yourself, and how should you plan if not.</p>
+<p class="note">This is small and new. One claim type is answered today and one is not, nothing is purchasable, and nobody is dispatched to inspect anything. We would rather name the boundary exactly than imply a capability that does not exist — or hide one that does.</p>
 <p class="note">Anything outside those two returns an honest "not yet supported", the closest in-scope alternatives, and advice on how to proceed. Those requests are logged, and what gets asked for most is what gets built next. <strong>Asking for something unsupported is how it becomes supported.</strong></p>
 </section>
 
@@ -86,7 +86,7 @@
 <span>MCP registry: dev.veritap/veritap</span>
 <a href="mailto:hello@veritap.dev">hello@veritap.dev</a>
 </nav>
-<p>Multi-source desk verification returning an evidence bundle. Indicative pricing only; live fulfillment is not yet open. Claims about individuals are excluded.</p>
+<p>Multi-source desk verification returning an evidence bundle. Business-exists claims are answered now, free; other claim types are in scope but not yet answered, and nothing is purchasable. Claims about individuals are excluded.</p>
 </footer>
 </div>
 <script src="/copy.js" defer></script>

@@ -20,10 +20,39 @@
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { CATALOG } from "../src/catalog.ts";
+import { canAutoVerify } from "../src/verify.ts";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const TARGET_DIRS = ["public", "src", "shim"];
 const EXTS = [".html", ".txt", ".json", ".ts", ".md", ".yaml"];
+
+/**
+ * UNDER-claiming. Added after the desk verifier went live and the site kept
+ * telling agents it had not: pages still read "cannot be fulfilled yet" and
+ * quoted an indicative price for a claim type that was, by then, answered for
+ * free with a real evidence bundle.
+ *
+ * The three rules above only ever hunted for claiming MORE than we do, so they
+ * passed while the copy claimed LESS. A gate that cannot fail in one direction
+ * is indistinguishable from a gate that passes — the same shape as the two
+ * earlier misses on the people-claim gate.
+ *
+ * Truth comes from the catalogue and the verifier, never a list maintained by
+ * hand here, so shipping a new live claim type cannot leave this rule stale.
+ */
+const LIVE_CLAIM_TYPES = CATALOG.filter(
+  (c) => c.fulfillment === "auto" && canAutoVerify(c.id),
+).map((c) => c.id);
+
+const UNDERCLAIM = [
+  /cannot be fulfilled/i,
+  /fulfillment is not (yet )?open/i,
+  /paid verification is not/i,
+  /not a real verification/i,
+  /indicative pricing only/i,
+  /no bundle like it has been produced/i,
+];
 
 /**
  * `allow` marks the honest NEGATION of a banned phrase — "nobody is
@@ -102,7 +131,8 @@ for (const file of files) {
   // The audit script itself necessarily contains every banned phrase.
   if (rel.includes("a3-audit")) continue;
 
-  const lines = readFileSync(file, "utf8").split("\n");
+  const fileText = readFileSync(file, "utf8");
+  const lines = fileText.split("\n");
   const isCode = file.endsWith(".ts") || file.endsWith(".mjs");
 
   lines.forEach((line, i) => {
@@ -124,6 +154,20 @@ for (const file of files) {
         console.log(`    ${line.trim().slice(0, 130)}`);
         console.log(`    why: ${rule.why}`);
       }
+    }
+
+    // A file whose subject is a LIVE claim type must not understate it.
+    if (
+      PRICE_SCOPE.some((e) => file.endsWith(e)) &&
+      LIVE_CLAIM_TYPES.some((id) => fileText.includes(id)) &&
+      UNDERCLAIM.some((re) => re.test(line))
+    ) {
+      violations++;
+      console.log(`\n  ${rel}:${i + 1}  [under-claiming]`);
+      console.log(`    ${trimmed.slice(0, 130)}`);
+      console.log(
+        `    why: this file is about ${LIVE_CLAIM_TYPES.find((id) => fileText.includes(id))}, which is answered now — saying otherwise turns agents away from a working capability.`,
+      );
     }
 
     if (PRICE_SCOPE.some((e) => file.endsWith(e)) && PRICE_RE.test(line) && !PRICE_OK.test(line)) {

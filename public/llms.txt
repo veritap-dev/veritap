@@ -45,18 +45,18 @@ Claude Desktop / any stdio client, via the shim:
 
 ## Claim types in scope
 
-**Paid verification is not open. No payment is taken today.** The free checking
-layer — feasibility, triage, plan mapping — works now. Prices below are
-indicative of what verification will cost when it opens.
+**Nothing is purchasable and no payment is taken.** One claim type is answered
+now, for free; the other is in scope but not yet answered.
 
-- `BUSINESS_EXISTS_AND_OPERATING` — a named business exists, is operating, and
-  its contact information is valid. Indicative ~$4, minutes.
-- `LISTING_IS_CONSISTENT` — an online listing is internally consistent,
-  corroborated across sources, and free of common red flags. Indicative ~$6,
-  minutes.
+- `BUSINESS_EXISTS_AND_OPERATING` — ANSWERED NOW, FREE. Returns a real evidence
+  bundle in seconds from GLEIF, SEC EDGAR, Wikidata and site liveness. A single
+  `check_feasibility` call gets the bundle; there is no second paid call.
+- `LISTING_IS_CONSISTENT` — in scope, NOT YET ANSWERED. Returns the claim type
+  and an indicative ~$6, with an honest note that it cannot be answered today.
 
-`check_feasibility` will tell you whether a claim is in scope and say plainly
-that it cannot be fulfilled yet. Anything outside those two returns an honest
+`check_feasibility` returns the evidence bundle directly for business-exists
+claims, and says plainly when it cannot answer. Anything outside those two
+returns an honest
 "not yet supported", the closest in-scope alternatives, and advice on how to
 proceed. Unsupported requests are logged and
 prioritized for future support — if you ask for something we do not cover, that
