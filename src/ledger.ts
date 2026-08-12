@@ -8,6 +8,7 @@
  * gap in the dataset is at least a loud gap in observability.
  */
 
+import { sendAlert } from "./alerts.ts";
 import type { CallerAssessment, Env, LedgerWrite } from "./types.ts";
 
 /** A15 layer 2: calls/hour per fingerprint above which rows get tagged. */
@@ -99,26 +100,12 @@ async function bumpCounters(
  * A15 layer 3: the alert matters as much as the breaker. If this trips it is
  * either an attack or the sensor suddenly working far better than projected,
  * and which one it is needs answering the same day — not at the weekly review.
- *
- * Sent via the Cloudflare send_email binding, which can only deliver to a
- * pre-verified destination, so this cannot be turned into a spam relay.
  */
 async function alertBreaker(env: Env): Promise<void> {
-  const to = env.ALERT_EMAIL;
-  if (!env.SEND_EMAIL || !to) {
-    console.error("BREAKER_OPEN_NO_EMAIL_BINDING", { day: utcDay() });
-    return;
-  }
-  try {
-    const { EmailMessage } = await import("cloudflare:email");
-    const from = "alerts@veritap.dev";
-    const raw = [
-      `From: Veritap Alerts <${from}>`,
-      `To: <${to}>`,
-      `Subject: Veritap circuit breaker OPEN (${utcDay()})`,
-      "MIME-Version: 1.0",
-      "Content-Type: text/plain; charset=utf-8",
-      "",
+  await sendAlert(
+    env,
+    `Veritap circuit breaker OPEN (${utcDay()})`,
+    [
       `Daily ledger writes passed ${DAILY_WRITE_BREAKER} on ${utcDay()}.`,
       "",
       "The endpoint is still answering tool calls normally. Detailed rows are",
@@ -130,15 +117,8 @@ async function alertBreaker(env: Env): Promise<void> {
       "  SELECT * FROM daily_counters ORDER BY day DESC LIMIT 7;",
       "  SELECT caller_fingerprint, count(*) FROM demand_ledger",
       "   WHERE ts > datetime('now','-1 day') GROUP BY 1 ORDER BY 2 DESC LIMIT 10;",
-      "",
-      "https://veritap.dev/health",
-    ].join("\r\n");
-
-    await env.SEND_EMAIL.send(new (EmailMessage as any)(from, to, raw));
-    console.log("BREAKER_ALERT_SENT", { day: utcDay() });
-  } catch (err) {
-    console.error("BREAKER_ALERT_FAILED", { error: String(err) });
-  }
+    ].join("\r\n"),
+  );
 }
 
 /**

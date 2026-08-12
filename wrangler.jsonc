@@ -39,7 +39,10 @@
   },
 
   // Nightly retention sweep: nulls raw_input_json older than 90 days (§7).
-  "triggers": { "crons": ["17 4 * * *"] },
+  // 04:17 nightly = sweeps + retention. Hourly = free-plan usage check,
+  // hourly because the request cap resets at midnight UTC and a daily check
+  // would report a breach long after traffic was already being dropped.
+  "triggers": { "crons": ["17 4 * * *", "0 * * * *"] },
 
   // A15 layer 3: breaker alert. send_email can only deliver to a pre-verified
   // destination address, so this binding cannot be abused as a relay.

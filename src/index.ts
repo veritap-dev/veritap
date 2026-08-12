@@ -16,6 +16,7 @@ import { catalogSummary } from "./router.ts";
 import { deriveFingerprint, touchCaller } from "./ledger.ts";
 import { INSTRUCTIONS, registerTools } from "./tools.ts";
 import { sweepNotifications } from "./notify.ts";
+import { sendAlert } from "./alerts.ts";
 import { readClientContext, hasIdentity, type ClientContext } from "./client.ts";
 import type { Env } from "./types.ts";
 
@@ -151,6 +152,71 @@ async function runRetention(env: Env): Promise<void> {
   }
 }
 
+
+/** Free plan hard cap. Past this, Workers returns 1027 and drops traffic. */
+const DAILY_REQUEST_CAP = 100_000;
+const USAGE_WARN_FRACTION = 0.6;
+
+/**
+ * Hourly check: are we approaching the free-plan request cap?
+ *
+ * Deliberately a PROXY, and worth being honest about its limits. It counts
+ * today's ledger rows plus today's inspections — the two things we already
+ * record — so it undercounts: static asset hits, /health, 404s and the extra
+ * requests in an MCP handshake are invisible to it. Treat the number as a
+ * floor, not a measurement.
+ *
+ * Counting real requests would mean a D1 write per request, which would burn
+ * the very budget it is trying to protect.
+ *
+ * Runs hourly rather than nightly because the cap resets at midnight UTC and a
+ * daily check could report a breach long after the traffic was already dropped.
+ */
+async function checkUsage(env: Env): Promise<void> {
+  const day = new Date().toISOString().slice(0, 10);
+  try {
+    const row = await env.DB.prepare(
+      `SELECT
+         (SELECT count(*) FROM demand_ledger WHERE substr(ts,1,10) = ?1) AS calls,
+         (SELECT count(*) FROM inspections   WHERE substr(ts,1,10) = ?1) AS looks,
+         (SELECT COALESCE(usage_alerted,0) FROM daily_counters WHERE day = ?1) AS alerted`,
+    )
+      .bind(day)
+      .first<{ calls: number; looks: number; alerted: number | null }>();
+
+    const observed = (row?.calls ?? 0) + (row?.looks ?? 0);
+    const threshold = DAILY_REQUEST_CAP * USAGE_WARN_FRACTION;
+    if (observed < threshold || row?.alerted) return;
+
+    await env.DB.prepare(
+      `INSERT INTO daily_counters (day, usage_alerted) VALUES (?1, 1)
+       ON CONFLICT(day) DO UPDATE SET usage_alerted = 1`,
+    )
+      .bind(day)
+      .run();
+
+    await sendAlert(
+      env,
+      `Veritap approaching free-plan request cap (${day})`,
+      [
+        `Observed at least ${observed} requests today against a free-plan cap of ${DAILY_REQUEST_CAP}.`,
+        "",
+        "This is a FLOOR, not a measurement: it counts ledger rows and tool-list",
+        "inspections only, so real usage is higher.",
+        "",
+        "On the free plan the cap does not bill you — it rejects requests with",
+        "Error 1027 until midnight UTC. Rejected demand events are lost forever.",
+        "",
+        "Options: let it drop (costs data), or upgrade to Workers Paid",
+        "($5/mo + usage) — the Billing Budget Alert is already configured.",
+      ].join("\r\n"),
+    );
+    console.warn("USAGE_WARNING_SENT", { day, observed });
+  } catch (err) {
+    console.error("USAGE_CHECK_FAILED", { error: String(err) });
+  }
+}
+
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
@@ -203,7 +269,12 @@ export default {
     );
   },
 
-  async scheduled(_event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+  async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext): Promise<void> {
+    // Hourly: cheap usage check. Nightly: the heavy sweeps.
+    if (event.cron === "0 * * * *") {
+      ctx.waitUntil(checkUsage(env));
+      return;
+    }
     // Re-match waiting callers against the current catalog before scrubbing —
     // the notify registry is the return path now that referrals are gone (A8).
     ctx.waitUntil(sweepNotifications(env).then(() => runRetention(env)));
