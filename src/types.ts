@@ -92,6 +92,13 @@ export interface LedgerWrite {
   raw?: unknown;
   /** Who called: components, deliberately not folded into the fingerprint. */
   client?: { name?: string; version?: string; userAgent?: string; protocol?: string };
+  /**
+   * Set on refused_policy rows: which gate category fired. The countable
+   * remnant of a request whose text we refuse to hold (migration 0005).
+   */
+  refusal_category?: string | null;
+  /** The claim needs someone on-site. Countable input to the flip decision. */
+  physical_presence?: boolean;
   /** A15 layer 2: row written while the caller was over threshold. */
   suspect?: boolean;
   /** A15 layer 3: breaker open — count it, do not store it. */

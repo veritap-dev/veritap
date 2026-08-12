@@ -148,8 +148,9 @@ const INSERT_LEDGER_SQL = `INSERT INTO demand_ledger (
          claim_description, claim_type, location_text, lat, lng,
          budget_ceiling_usd, deadline, downstream_action, cost_if_wrong, task_context,
          outcome, price_quoted, revenue_usd, raw_input_json, suspect,
-         client_name, client_version, client_ua, protocol_version
-       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+         client_name, client_version, client_ua, protocol_version,
+         refusal_category, physical_presence
+       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
 /** Bind list for one ledger row. Order must match INSERT_LEDGER_SQL exactly. */
 function ledgerBindings(w: LedgerWrite, now: string): unknown[] {
@@ -179,6 +180,8 @@ function ledgerBindings(w: LedgerWrite, now: string): unknown[] {
     w.client?.version ?? null,
     w.client?.userAgent ?? null,
     w.client?.protocol ?? null,
+    w.refusal_category ?? null,
+    w.physical_presence ? 1 : 0,
   ];
 }
 
@@ -227,7 +230,6 @@ export async function writeLedgerMany(env: Env, writes: LedgerWrite[]): Promise<
  */
 export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | null> {
   const now = new Date().toISOString();
-  const loc = w.input.location;
 
   // Breaker open: keep answering the caller normally, but stop storing detail.
   // The counter still moves, so the flood remains visible in aggregate.
@@ -237,43 +239,10 @@ export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | nu
   }
 
   try {
-    const row = await env.DB.prepare(
-      `INSERT INTO demand_ledger (
-         ts, tool_name, origin, parent_event_id, caller_fingerprint,
-         claim_description, claim_type, location_text, lat, lng,
-         budget_ceiling_usd, deadline, downstream_action, cost_if_wrong, task_context,
-         outcome, price_quoted, revenue_usd, raw_input_json, suspect,
-         client_name, client_version, client_ua, protocol_version
-       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-       RETURNING id`,
-    )
-      .bind(
-        now,
-        w.tool_name,
-        w.origin,
-        w.parent_event_id ?? null,
-        w.caller_fingerprint ?? null,
-        w.input.claim_description ?? null,
-        w.claim_type ?? null,
-        loc?.text ?? null,
-        loc?.lat ?? null,
-        loc?.lng ?? null,
-        w.input.budget_ceiling_usd ?? null,
-        w.input.deadline ?? null,
-        w.input.downstream_action ?? null,
-        w.input.cost_if_wrong != null ? String(w.input.cost_if_wrong) : null,
-        w.input.task_context ?? null,
-        w.outcome,
-        w.price_quoted ?? null,
-        w.revenue_usd ?? null,
-        // Refusals are recorded as events, never as content.
-        w.redacted ? null : JSON.stringify(w.raw ?? w.input),
-        w.suspect ? 1 : 0,
-        w.client?.name ?? null,
-        w.client?.version ?? null,
-        w.client?.userAgent ?? null,
-        w.client?.protocol ?? null,
-      )
+    // Same column list and bindings as the batch path — the two had already
+    // drifted once, and a divergence here silently loses columns.
+    const row = await env.DB.prepare(`${INSERT_LEDGER_SQL} RETURNING id`)
+      .bind(...ledgerBindings(w, now))
       .first<{ id: number }>();
 
     if (await bumpCounters(env, { wrote: 1, degraded: 0, suspect: w.suspect ? 1 : 0 }))

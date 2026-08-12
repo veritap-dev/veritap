@@ -164,8 +164,11 @@ export async function route(
   if (refusal) {
     const event_id = await log("refused_policy", null, null, {
       // The event is recorded; the content is not. Everything caller-supplied
-      // is dropped except the fingerprint and the refusal category.
+      // is dropped except the fingerprint and the refusal category — which
+      // also lands in its own column so the demand curve of what we decline
+      // is countable without parsing placeholder text.
       input: { claim_description: `[redacted: people-claim refused — ${refusal.category}]` },
+      refusal_category: refusal.category,
       redacted: true,
       raw: undefined,
     });
@@ -183,8 +186,10 @@ export async function route(
 
   // --- 4. Nothing in the catalog resembles this ask. The most valuable row. ---
   if (!match) {
-    const event_id = await log("unsupported", null, null);
     const triaged = classifyUnknown(description);
+    const event_id = await log("unsupported", null, null, {
+      physical_presence: triaged.requires_physical_presence,
+    });
     return {
       feasible: "not_yet",
       closest_alternatives: closestAlternatives(description),
@@ -240,8 +245,10 @@ export async function route(
   }
 
   // --- 3. Catalog match, nothing able to answer it today. Say so plainly. ---
-  const event_id = await log("deferred_no_fulfiller", def.id, def.price_usd);
   const triaged = classifyUnknown(description);
+  const event_id = await log("deferred_no_fulfiller", def.id, def.price_usd, {
+    physical_presence: triaged.requires_physical_presence,
+  });
   return {
     feasible: "partial",
     supported_claim_type: def.id,

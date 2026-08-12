@@ -374,6 +374,8 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
           caller_fingerprint: fingerprint,
           claim_type: item.claim_type ?? null,
           price_quoted: item.est_price_usd ?? null,
+          refusal_category: item.refused_category ?? null,
+          physical_presence: item.requires_physical_presence,
           suspect: assessment.suspect,
           degraded: assessment.degraded,
           client,
