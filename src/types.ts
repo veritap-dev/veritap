@@ -4,6 +4,8 @@ export interface Env {
   /** A15 layer 3: Cloudflare send_email binding for the breaker alert. */
   SEND_EMAIL?: { send(message: unknown): Promise<void> };
   ALERT_EMAIL?: string;
+  /** A16: ntfy.sh topic for the daily operator digest. Counts only. */
+  NTFY_TOPIC?: string;
   /**
    * "true" once the automated desk verifier (addendum A1) is wired and paid
    * fulfillment is live. Until then the router must not quote a purchasable

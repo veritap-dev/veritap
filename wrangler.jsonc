@@ -59,6 +59,11 @@
     // No REFERRAL_* vars: A8 removed outbound referrals entirely. A miss keeps
     // its signal in-house and is answered with alternatives + self-help + a
     // real report-back promise (see src/notify.ts).
+    // A16: daily operator digest. Counts only — no claim text ever leaves
+    // the Access-protected path. Unguessable so the topic is not readable by
+    // anyone who guesses "veritap".
+    "NTFY_TOPIC": "[ntfy topic — rotated and redacted]",
+
     "PUBLIC_BASE_URL": "https://veritap.dev"
   }
 }

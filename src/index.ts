@@ -17,6 +17,8 @@ import { deriveFingerprint, touchCaller } from "./ledger.ts";
 import { INSTRUCTIONS, registerTools } from "./tools.ts";
 import { sweepNotifications } from "./notify.ts";
 import { sendAlert } from "./alerts.ts";
+import { handleAdmin } from "./admin.ts";
+import { dailyDigest } from "./digest.ts";
 import { readClientContext, hasIdentity, type ClientContext } from "./client.ts";
 import type { Env } from "./types.ts";
 
@@ -254,6 +256,13 @@ export default {
       return mcpHandler(request, env, ctx);
     }
 
+    // A16: operator observability. handleAdmin refuses without a Cloudflare
+    // Access identity, so deploying this ahead of the Access policy cannot
+    // leak the ledger.
+    if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
+      return handleAdmin(request, env, url);
+    }
+
     if (url.pathname === "/health") {
       return Response.json({
         ok: true,
@@ -277,6 +286,10 @@ export default {
     }
     // Re-match waiting callers against the current catalog before scrubbing —
     // the notify registry is the return path now that referrals are gone (A8).
-    ctx.waitUntil(sweepNotifications(env).then(() => runRetention(env)));
+    ctx.waitUntil(
+      sweepNotifications(env)
+        .then(() => runRetention(env))
+        .then(() => dailyDigest(env)),
+    );
   },
 } satisfies ExportedHandler<Env>;

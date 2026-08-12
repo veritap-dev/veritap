@@ -1,6 +1,9 @@
 # AI crawlers explicitly welcome — agents discover capabilities by search.
+# /admin is Access-protected and returns 403 to anything without an identity;
+# this is defence in depth, not the control.
 User-agent: *
 Allow: /
+Disallow: /admin
 
 User-agent: GPTBot
 Allow: /
