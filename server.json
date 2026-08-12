@@ -1,14 +1,14 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "dev.veritap/veritap",
-  "description": "Check whether a real-world fact can be verified before an agent acts on it — businesses, listings, objects, places. Free, no auth.",
-  "version": "0.1.2",
+  "description": "Check whether a real-world fact can be verified before an agent acts on it. Free, no auth.",
+  "version": "0.1.3",
   "websiteUrl": "https://veritap.dev",
   "packages": [
     {
       "registryType": "npm",
       "identifier": "veritap-mcp",
-      "version": "0.1.2",
+      "version": "0.1.3",
       "transport": {
         "type": "stdio"
       }
