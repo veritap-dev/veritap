@@ -226,6 +226,14 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
+    // Non-canonical hosts 301 to the apex. The bare domain is the identity
+    // that registries and installed client configs pin; www exists only so
+    // typing it doesn't dead-end.
+    if (url.hostname !== "veritap.dev" && url.hostname.endsWith("veritap.dev")) {
+      url.hostname = "veritap.dev";
+      return Response.redirect(url.toString(), 301);
+    }
+
     if (url.pathname === "/mcp") {
       // Parse identity ONCE per request and hand it down, rather than cloning
       // and re-parsing the body in each consumer.

@@ -15,7 +15,12 @@
   // Custom domain only. See docs/decisions.md.
   "workers_dev": false,
   "preview_urls": false,
-  "routes": [{ "pattern": "veritap.dev", "custom_domain": true }],
+  "routes": [
+    { "pattern": "veritap.dev", "custom_domain": true },
+    // www exists only to 301 to the apex (src/index.ts) — registries and
+    // installed configs pin the bare domain as the canonical URL.
+    { "pattern": "www.veritap.dev/*", "zone_name": "veritap.dev" }
+  ],
 
   "d1_databases": [
     {
