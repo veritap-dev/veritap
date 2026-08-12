@@ -64,9 +64,19 @@ const CLAIM_INPUT = {
     .optional()
     .describe("What you will do with the answer once you have it."),
   cost_if_wrong: z
-    .union([z.string().max(500), z.number()])
+    // The enum first: an un-unitized scalar field collected garbage ("20" —
+    // dollars? severity? tokens?), while a severity an agent can actually
+    // report gets filled honestly. Legacy free text/number still accepted —
+    // installed clients pin schemas forever.
+    .union([
+      z.enum(["blocks_task", "degrades_answer", "cosmetic"]),
+      z.string().max(500),
+      z.number(),
+    ])
     .optional()
-    .describe("What it costs your task if this fact turns out to be wrong."),
+    .describe(
+      'What happens to your task if this fact is wrong: "blocks_task", "degrades_answer", or "cosmetic".',
+    ),
   task_context: z.string().max(2000).optional().describe("The wider task this step belongs to."),
   callback_url: z
     .string()
@@ -335,10 +345,33 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
         unknowns: z
           // Each unknown becomes its own ledger row, so this array length is a
           // direct write multiplier. 50 is far above real batch sizes.
-          .array(z.string().max(1000))
+          //
+          // Objects preferred, bare strings accepted forever: this is the
+          // highest-volume capture path, and per-claim context is what turns a
+          // claim-string into a demand record — but installed clients pin
+          // schemas, so the string form can never be retired.
+          .array(
+            z.union([
+              z.string().max(1000),
+              z.object({
+                claim: z.string().min(1).max(1000).describe("The uncertainty itself."),
+                why_it_matters: z
+                  .string()
+                  .max(500)
+                  .optional()
+                  .describe("What this specific unknown gates in your task."),
+                if_unresolved: z
+                  .enum(["blocks_task", "degrades_answer", "cosmetic"])
+                  .optional()
+                  .describe("What happens to your task if this stays unknown."),
+              }),
+            ]),
+          )
           .min(1)
           .max(50)
-          .describe("Every uncertainty in the task. Batch them — this is one call."),
+          .describe(
+            "Every uncertainty in the task. Batch them — this is one call. Objects with why_it_matters and if_unresolved get sharper triage than bare strings.",
+          ),
         task_context: z.string().max(2000).optional().describe("What you are trying to accomplish."),
         downstream_action: z
           .string()
@@ -349,19 +382,32 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
     },
     async (args) => {
       const { unknowns, task_context, downstream_action } = args as {
-        unknowns: string[];
+        unknowns: Array<
+          | string
+          | {
+              claim: string;
+              why_it_matters?: string;
+              if_unresolved?: "blocks_task" | "degrades_answer" | "cosmetic";
+            }
+        >;
         task_context?: string;
         downstream_action?: string;
       };
       const { fingerprint, assessment, client } = await identify(env, request, clientCtx);
-      const triage = unknowns.map(classifyUnknown);
+
+      // Normalize both accepted shapes; classification sees only the claim text.
+      const items = unknowns.map((u) =>
+        typeof u === "string" ? { claim: u } : u,
+      );
+      const triage = items.map((u) => classifyUnknown(u.claim));
 
       // Every unknown is a demand event, including the ones we route away.
       // Collected and written as ONE batch: fifty separate writes would blow
       // the free plan's 50-queries-per-invocation ceiling.
       const rows: LedgerWrite[] = [];
       const notifies: string[] = [];
-      for (const item of triage) {
+      for (const [i, item] of triage.entries()) {
+        const supplied = items[i];
         const refused = Boolean(item.refused_category);
         rows.push({
           tool_name: "triage_unknowns",
@@ -380,7 +426,7 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
           degraded: assessment.degraded,
           client,
           redacted: refused,
-          raw: refused ? undefined : { item, task_context, downstream_action },
+          raw: refused ? undefined : { item: supplied, task_context, downstream_action },
           input: refused
             ? {
                 claim_description: `[redacted: people-claim refused — ${item.refused_category}]`,
@@ -388,7 +434,11 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
             : {
                 claim_description: item.unknown,
                 task_context,
-                downstream_action,
+                // Per-claim context wins over the batch-level fields: an
+                // object item's "why" is about THIS unknown, which is the
+                // fidelity the bare-string form could never carry.
+                downstream_action: supplied.why_it_matters ?? downstream_action,
+                cost_if_wrong: supplied.if_unresolved,
               },
         });
 
