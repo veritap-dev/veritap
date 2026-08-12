@@ -1,3 +1,41 @@
+# First external traffic — 2026-08-12, and the test-data purge
+
+Purged my own smoke-test traffic from production so the §12 metrics start from
+zero. Deleted **by fingerprint**, not by user-agent guesswork — only the two
+identities provably mine (curl and the shim, from this machine). Backups of all
+five tables were taken first, into the session scratchpad.
+
+Result: ledger 0, callers 0, notify 0, cache 0, counters 0.
+
+**Five inspection rows were deliberately kept, because they are not ours.**
+
+```
+07:50:30  loop-mcp-catalog-fetch/0.1.0
+07:57:55  python-httpx/0.28.1
+08:00:06  node
+08:03:08  node
+08:05:55  loop-mcp-catalog-fetch/0.1.0
+```
+
+The official registry listing published at **07:50:06Z**. The first external
+`tools/list` fetch arrived **24 seconds later**, and five arrived from four
+distinct fingerprints inside sixteen minutes.
+
+Two things follow. First, registry propagation is fast and real — §8's remaining
+manual submissions may matter less than assumed. Second, and more useful: every
+one of those clients read the tool list and **called nothing**. That is exactly
+the negative-space signal `inspections` was built to capture, and it is the
+project's first genuine datum. Whether inspect-without-calling is normal
+crawler behaviour or a discovery-copy problem is precisely the question the
+table exists to answer — but it needs a baseline, which is why these rows
+survived the purge.
+
+Note for anyone repeating the purge: `notify_registry.event_id` is a foreign key
+onto `demand_ledger(id)`, so the ledger delete fails while notify rows still
+reference it. Delete notify first.
+
+---
+
 # A12–A14 — pure sensor. Paid tier cancelled for v1.
 
 Tickets 5 and 6 are cancelled: no Stripe, no auto desk verifier, no
