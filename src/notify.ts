@@ -24,6 +24,44 @@ export interface PendingNotice {
   claim_type: string | null;
 }
 
+/**
+ * Guard for the one place this service makes an outbound request to a
+ * caller-supplied URL.
+ *
+ * Without this, anyone can register callbacks pointing at a third party and use
+ * veritap.dev as a request reflector — our domain sending POSTs to a victim,
+ * with our reputation attached. Cloudflare Workers cannot reach RFC1918 space,
+ * so classic SSRF is limited, but the reflection and internal-hostname surface
+ * is real and cheap to close.
+ *
+ * NOTE (durable fix, not done): the robust answer is a verification challenge
+ * at registration — POST a nonce to the URL and require it echoed back before
+ * the callback is ever armed. That proves the registrant controls the endpoint.
+ * Until then these checks plus the per-sweep cap are the mitigation.
+ */
+const BLOCKED_HOST = /^(localhost$|.*\.local$|.*\.internal$|127\.|0\.|10\.|169\.254\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|\[?::1\]?$|metadata\.)/i;
+
+export function isSafeCallbackUrl(raw: string | null | undefined): boolean {
+  if (!raw) return false;
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  // https only: a plaintext callback would leak the claim text in transit.
+  if (u.protocol !== "https:") return false;
+  if (BLOCKED_HOST.test(u.hostname)) return false;
+  // Bare IP literals have no legitimate use here and skip DNS-level controls.
+  if (/^\d{1,3}(\.\d{1,3}){3}$/.test(u.hostname)) return false;
+  if (u.hostname.includes(":")) return false; // IPv6 literal
+  if (!u.hostname.includes(".")) return false; // unqualified internal name
+  return true;
+}
+
+/** Hard cap on outbound callbacks per sweep, so one actor cannot conscript us. */
+const MAX_CALLBACKS_PER_SWEEP = 25;
+
 /** Record that a caller wants to hear back when this gap closes. */
 export async function registerNotify(
   env: Env,
@@ -57,7 +95,7 @@ export async function registerNotify(
         args.eventId,
         text,
         normalizeClaim(text),
-        args.callbackUrl ?? null,
+        isSafeCallbackUrl(args.callbackUrl) ? args.callbackUrl : null,
       )
       .run();
   } catch (err) {
@@ -135,6 +173,11 @@ export async function sweepNotifications(env: Env): Promise<void> {
       readied++;
 
       if (!row.callback_url) continue;
+      if (!isSafeCallbackUrl(row.callback_url)) {
+        console.warn("NOTIFY_CALLBACK_BLOCKED", { id: row.id });
+        continue;
+      }
+      if (posted >= MAX_CALLBACKS_PER_SWEEP) continue;
       try {
         const res = await fetch(row.callback_url, {
           method: "POST",

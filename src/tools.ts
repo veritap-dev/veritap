@@ -29,36 +29,42 @@ const CLAIM_INPUT = {
   claim_description: z
     .string()
     .min(1)
+    // Bounds exist to protect the ledger, not the parser. Every call writes a
+    // row, so an unbounded field is an unbounded write.
+    .max(2000)
     .describe("Free text. The real-world fact you need settled. Required."),
   claim_type: z
     .string()
+    .max(120)
     .optional()
     .describe("Optional. A claim type id from the published catalog, if you know it."),
   location: z
     .object({
-      text: z.string().optional(),
+      text: z.string().max(500).optional(),
       lat: z.number().optional(),
       lng: z.number().optional(),
     })
     .optional()
     .describe("Where the fact must be checked."),
-  deadline: z.string().optional().describe("ISO8601. When the answer stops being useful."),
+  deadline: z.string().max(64).optional().describe("ISO8601. When the answer stops being useful."),
   budget_ceiling_usd: z
     .number()
     .optional()
     .describe("Most you would pay for this answer. Directly drives what gets built next."),
   downstream_action: z
     .string()
+    .max(1000)
     .optional()
     .describe("What you will do with the answer once you have it."),
   cost_if_wrong: z
-    .union([z.string(), z.number()])
+    .union([z.string().max(500), z.number()])
     .optional()
     .describe("What it costs your task if this fact turns out to be wrong."),
-  task_context: z.string().optional().describe("The wider task this step belongs to."),
+  task_context: z.string().max(2000).optional().describe("The wider task this step belongs to."),
   callback_url: z
     .string()
     .url()
+    .max(2048)
     .optional()
     .describe(
       "Optional. If this claim is not supported yet, POST here when it becomes supported. Otherwise you are told on your next call.",
@@ -192,17 +198,20 @@ export function registerTools(server: McpServer, env: Env, request: Request | un
 Pass your whole plan, including steps you have not decomposed into questions yet. Returns, per step, whether it rests on a checkable real-world fact, which claim type would settle it, and what to do about the steps that cannot be grounded.`,
       annotations: FREE_ANNOTATIONS,
       inputSchema: z.object({
-        goal: z.string().describe("What the overall plan is trying to achieve."),
+        goal: z.string().max(2000).describe("What the overall plan is trying to achieve."),
         steps: z
           .array(
             z.object({
-              description: z.string().describe("What this step does."),
+              description: z.string().max(1000).describe("What this step does."),
               depends_on_real_world_fact: z
                 .string()
+                .max(1000)
                 .optional()
                 .describe("The physical-world fact this step assumes, if any."),
             }),
           )
+          .min(1)
+          .max(50)
           .describe("The plan, in order."),
       }),
     },
@@ -286,12 +295,16 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
       annotations: FREE_ANNOTATIONS,
       inputSchema: z.object({
         unknowns: z
-          .array(z.string())
+          // Each unknown becomes its own ledger row, so this array length is a
+          // direct write multiplier. 50 is far above real batch sizes.
+          .array(z.string().max(1000))
           .min(1)
+          .max(50)
           .describe("Every uncertainty in the task. Batch them — this is one call."),
-        task_context: z.string().optional().describe("What you are trying to accomplish."),
+        task_context: z.string().max(2000).optional().describe("What you are trying to accomplish."),
         downstream_action: z
           .string()
+          .max(1000)
           .optional()
           .describe("What resolving these would let you do."),
       }),
