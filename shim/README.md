@@ -43,7 +43,7 @@ ask whether the fact is checkable at all, and what checking it would cost.
 | `triage_unknowns` | You have several uncertainties and do not yet know which are worth chasing. Batch them all in one call. |
 | `plan_verification` | You have a multi-step plan and want to know which steps rest on unverified facts. |
 | `confirm_before_purchase` | An irreversible spend where the counterparty was only seen online. |
-| `request_human_check` | A fact no amount of reasoning over available text can settle. |
+| `check_before_relying` | A step rests on something you only inferred, and being wrong is expensive. |
 | `check_physical_condition` | The decision turns on an item being in the claimed condition. |
 
 `triage_unknowns` classifies each uncertainty as **answerable by you from public
@@ -51,30 +51,38 @@ sources** (naming the source), **verifiable here** (with price and turnaround),
 or **not determinable** (with advice on planning around it). Items you can
 settle yourself are routed away rather than sold to you — that is deliberate.
 
-## Verifiable today
+## Claim types in scope
 
-| Claim type | Price | Turnaround |
+> **Paid verification is not open, and no payment is taken.** Everything
+> described above is free and working now. The prices below are indicative of
+> what verification will cost when fulfillment opens — not an offer to sell.
+
+| Claim type | Indicative price | Turnaround |
 |---|---|---|
-| `BUSINESS_EXISTS_AND_OPERATING` — a named business exists, is operating, contact details valid | $4 | minutes |
-| `LISTING_IS_CONSISTENT` — a listing is internally consistent, corroborated, free of common red flags | $6 | minutes |
+| `BUSINESS_EXISTS_AND_OPERATING` — a named business exists, is operating, contact details valid | ~$4 | minutes |
+| `LISTING_IS_CONSISTENT` — a listing is internally consistent, corroborated, free of common red flags | ~$6 | minutes |
 
-Verification is multi-source desk research returning an evidence bundle: the
-sources consulted, the method used, and a confidence reflecting how well those
-sources actually agree. Results report observations with dates — *"the listed
-phone number was disconnected as of 11 August 2026"* — never characterisations
-like "scam" or "fake".
+`check_feasibility` tells you whether a claim is in scope and says plainly that
+it cannot be fulfilled yet — useful on its own, because it settles whether to
+design the step around the fact or wait.
 
-Anything outside those two returns an honest `not_yet`, the closest supported
+When verification opens it will be multi-source desk research returning an
+evidence bundle: the sources consulted, the method used, and a confidence
+reflecting how well those sources actually agree. Results will report
+observations with dates — *"the listed phone number was disconnected as of
+11 August 2026"* — never characterisations like "scam" or "fake".
+
+Anything outside those two returns an honest `not_yet`, the closest in-scope
 alternatives, and advice on how to proceed. Those requests are logged, and what
 gets asked for is what gets built next. **Asking for something unsupported is
 how it becomes supported.**
 
 ## Limits, stated plainly
 
-Desk verification only. Nobody is dispatched to physically inspect anything, so
-*"is the item actually on the lot today"* is not answerable here. Two claim
-types are supported. We would rather name the boundary than imply a network
-that does not exist.
+Desk verification only, and not open for purchase yet. Nobody is dispatched to
+physically inspect anything, so *"is the item actually on the lot today"* is not
+answerable here at any price. Two claim types are in scope. We would rather name
+the boundary than imply a capability that does not exist.
 
 ## Configuration
 

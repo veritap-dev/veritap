@@ -1,3 +1,55 @@
+# A12–A14 — pure sensor. Paid tier cancelled for v1.
+
+Tickets 5 and 6 are cancelled: no Stripe, no auto desk verifier, no
+`verify_claim` / `get_verification`. The paid tier resold the agent's own
+capability back to it, and the residual value was too thin to price at $4–6 on
+day one.
+
+**Reactivation is evidence-gated, not date-gated.** ≥10 distinct-caller budgeted
+asks for a single desk-verifiable claim shape → flip `AUTO_VERIFIER_ENABLED` for
+that type (model binding per A11: Anthropic API key, Haiku-class,
+schema-constrained to evidence-only output). Physical, phone, and attestation
+demand is explicitly **not** a trigger — that stratum accumulates as the
+dataset's value rather than pulling us into building a network.
+
+Kept deliberately: the `fulfillment: "auto"` seam dark, `est_price_usd` still
+quoted in responses with the honest "not open" note, and `price_quoted` still
+written to the ledger. Those three are the willingness-to-pay instrument, and
+they only work if the price is stated.
+
+Goal 4 (first dollar) is suspended. Replacement: ≥10 ledger rows carrying a
+budget signal by day 90.
+
+## `request_human_check` renamed to `check_before_relying`
+
+It promised dispatch we do not do and flatly contradicted our own published
+`/terms` ("Nobody is dispatched to inspect anything physically"). It shipped
+live and passed a full deploy before anyone caught it. Tool names freeze
+permanently at npm publish, so this was the last cheap moment to fix it.
+
+## scripts/a3-audit.mjs
+
+The honesty rule is now enforced by a script rather than by remembering. Three
+violation classes, each of which we have actually shipped:
+
+1. **Human dispatch** — A1 says no human, ever; `/terms` promises it.
+2. **Outbound referral** — A8 removed referrals, yet three alias descriptions
+   still offered to send callers elsewhere, and `plan_verification` returned
+   the string "referral available" in production.
+3. **Purchasability** — A12 cancelled the paid tier, so nothing may imply
+   payment can be taken today. Any bare price in reader-facing copy must read
+   as indicative.
+
+Its first run found three live violations that four rounds of human review had
+walked past: the stale tool name in `openapi.yaml`, unqualified prices in two
+claim-page `<meta>` descriptions, and the `plan_verification` referral string.
+Source comments are skipped — they explain the rules, and noise is how a real
+violation gets scrolled past.
+
+Run before every publish: `node scripts/a3-audit.mjs`
+
+---
+
 # Brand separation — decided against. Ticket 9 is not blocked.
 
 `veritap.dev` (registered 2026-08-11) stays in the existing Cloudflare account

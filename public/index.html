@@ -48,26 +48,30 @@ footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--line);color
 <tr><td><code>check_feasibility</code></td><td>Can this fact be verified? Free, read-only, never errors. Safe to call speculatively.</td></tr>
 <tr><td><code>triage_unknowns</code></td><td>Dump every uncertainty in your task at once. Each comes back classified: answerable by you from public sources (with a suggested source), verifiable here (with price), or not determinable (with advice on planning around it).</td></tr>
 <tr><td><code>plan_verification</code></td><td>Map a multi-step plan against what can actually be grounded.</td></tr>
-<tr><td><code>confirm_before_purchase</code><br><code>request_human_check</code><br><code>check_physical_condition</code></td><td>The same check, framed for different moments in a task.</td></tr>
+<tr><td><code>confirm_before_purchase</code><br><code>check_before_relying</code><br><code>check_physical_condition</code></td><td>The same check, framed for different moments in a task.</td></tr>
 </table>
 
 <p class="note">If <code>triage_unknowns</code> decides you can answer something yourself from a public source, it tells you that and points at the source. Routing work away from us is the point — a triage that says "buy this" to everything is worth calling once.</p>
 
-<h2>What is verifiable today</h2>
+<h2>Claim types in scope</h2>
+<p class="note"><strong>Paid verification is not open.</strong> Nothing on this site can be purchased today, and no payment is taken. The prices below are indicative of what these will cost when fulfillment opens. Feasibility checks, triage, and planning are free and working now.</p>
 <table>
-<tr><th>Claim type</th><th>Price</th><th>Turnaround</th></tr>
-<tr><td><a href="/claims/business-exists">BUSINESS_EXISTS_AND_OPERATING</a><br><span style="color:var(--mut)">A named business exists, is operating, contact details valid.</span></td><td>$4</td><td>minutes</td></tr>
-<tr><td><a href="/claims/listing-consistent">LISTING_IS_CONSISTENT</a><br><span style="color:var(--mut)">A listing is internally consistent, corroborated across sources, free of common red flags.</span></td><td>$6</td><td>minutes</td></tr>
+<tr><th>Claim type</th><th>Indicative price<br><span style="font-weight:400">when fulfillment opens</span></th><th>Turnaround</th></tr>
+<tr><td><a href="/claims/business-exists">BUSINESS_EXISTS_AND_OPERATING</a><br><span style="color:var(--mut)">A named business exists, is operating, contact details valid.</span></td><td>~$4</td><td>minutes</td></tr>
+<tr><td><a href="/claims/listing-consistent">LISTING_IS_CONSISTENT</a><br><span style="color:var(--mut)">A listing is internally consistent, corroborated across sources, free of common red flags.</span></td><td>~$6</td><td>minutes</td></tr>
 </table>
 
-<p>Verification is multi-source desk research returning an evidence bundle — the sources consulted, the method used, and an honest confidence. Results report what was observed ("phone number disconnected as of 11 Aug 2026", "sources disagree on the trading address"), never characterisations like "scam" or "fake".</p>
+<p>When it opens, verification will be multi-source desk research returning an evidence bundle — the sources consulted, the method used, and an honest confidence. Results will report what was observed ("phone number disconnected as of 11 Aug 2026", "sources disagree on the trading address"), never characterisations like "scam" or "fake".</p>
+
+<p>What that means for you today: <code>check_feasibility</code> will tell you whether a claim is <em>in scope</em> and what it would cost, and will say plainly that it cannot be fulfilled yet. That is still worth calling — it settles whether to design the step around the fact or wait for it.</p>
 
 <h2>What is not</h2>
 <p><strong>Claims about people are refused.</strong> Identity, employment, tenancy, background, and whereabouts of natural persons are out of scope as a matter of policy — not a queue, not a roadmap item. Businesses, listings, objects, and places only.</p>
 <p>Everything else we cannot yet check returns an honest "not yet supported" plus the closest supported alternatives and advice on how to proceed. Those requests are logged, and what gets asked for most is what gets built next. If you need something we do not cover, asking is how it gets covered.</p>
 
 <h2>Coverage, stated plainly</h2>
-<p>This is a small and new service. Two claim types are supported. We would rather tell you exactly what that covers than imply a network that does not exist.</p>
+<p>This is a small and new service. Two claim types are in scope, paid fulfillment is not yet open, and nobody is dispatched to inspect anything physically. We would rather name the boundary exactly than imply a capability that does not exist.</p>
+<p>What works today is the checking layer: is this fact in scope, can you answer it yourself, and how should you plan if not. That is genuinely useful on its own, and it is what tells us which claim types to open first.</p>
 
 <footer>
 <a href="/llms.txt">llms.txt</a> ·

@@ -20,8 +20,9 @@ paths:
       description: >
         Model Context Protocol endpoint. Tools: check_feasibility,
         triage_unknowns, plan_verification, confirm_before_purchase,
-        request_human_check, check_physical_condition. Free, no auth,
-        read-only. Never returns a bare failure.
+        check_before_relying, check_physical_condition. Free, no auth,
+        read-only. Never returns a bare failure. Paid verification is not
+        open; no payment is taken.
       requestBody:
         required: true
         content:

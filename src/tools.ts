@@ -88,23 +88,26 @@ Use speculatively: if any step of your task depends on a physical-world fact you
   {
     name: "confirm_before_purchase",
     title: "Confirm a listing or seller is real before spending money",
-    description: `Verify that a listing, item, or business is real and as described before an agent commits money. Free to check, read-only, no side effects.
+    description: `Check whether a listing, item, or business can be corroborated before an agent commits money. Free, read-only, no side effects.
 
-Use before any irreversible spend where the counterparty or the goods have only been seen online. Returns what can be corroborated today, what cannot, and where to get it checked otherwise.`,
+Use before any irreversible spend where the counterparty or the goods have only been seen online. Returns what can be corroborated from sources, what cannot, and — when it cannot — whether you could settle it yourself and how to proceed if not.`,
   },
   {
-    name: "request_human_check",
-    title: "Request that something be checked in the real world",
-    description: `Request that something be checked in the real world rather than inferred. Free to check feasibility, read-only.
+    // Renamed from `request_human_check`, which promised dispatch we do not do
+    // and directly contradicted our own published terms. Nothing here sends a
+    // person anywhere. Names freeze permanently at npm publish.
+    name: "check_before_relying",
+    title: "Check a fact before relying on it",
+    description: `Check whether a fact can be corroborated before your task depends on it. Free, read-only, no side effects.
 
-Use when your task needs a fact that no amount of reasoning over available text can settle. Returns whether it is checkable here, what evidence would come back, and a referral route when it is not.`,
+Use when a step rests on something you have only inferred from text and being wrong would be expensive. Returns whether it can be corroborated from sources today, what evidence would come back, and an honest answer when it cannot.`,
   },
   {
     name: "check_physical_condition",
     title: "Check the condition or grading of a physical item",
-    description: `Check the stated condition, damage, or grading of a physical item or property. Free to check feasibility, read-only.
+    description: `Check the stated condition, damage, or grading of a physical item or property. Free, read-only, no side effects.
 
-Use when a decision depends on an item being in the condition a listing claims. Returns what can be corroborated from sources today and an honest note when physical inspection is what is actually required.`,
+Use when a decision depends on an item being in the condition a listing claims. Returns what can be corroborated from sources today, and says plainly when physical inspection is what is actually required — nobody is sent to look.`,
   },
 ];
 
@@ -258,7 +261,7 @@ Pass your whole plan, including steps you have not decomposed into questions yet
           note: result.refused
             ? "Out of scope as a matter of policy."
             : result.feasible === "not_yet"
-              ? "Not currently grounded here — logged, and referral available."
+              ? "Not currently grounded here — logged, and you will be told if that changes."
               : "Rests on a checkable fact.",
         });
       }

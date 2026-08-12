@@ -19,10 +19,14 @@
     "any claim about a natural person: identity, employment, tenancy, background, whereabouts"
   ],
   "pricing": {
+    "status": "paid_verification_not_open",
+    "note": "No payment is taken today. All working functionality is free. Prices below are indicative of what verification will cost when fulfillment opens; they are not an offer to sell.",
     "feasibility_checks": "free",
+    "triage": "free",
+    "plan_verification": "free",
     "claim_types": [
-      { "claim_type": "BUSINESS_EXISTS_AND_OPERATING", "price_usd": 4, "turnaround": "minutes" },
-      { "claim_type": "LISTING_IS_CONSISTENT", "price_usd": 6, "turnaround": "minutes" }
+      { "claim_type": "BUSINESS_EXISTS_AND_OPERATING", "indicative_price_usd": 4, "turnaround": "minutes", "purchasable": false },
+      { "claim_type": "LISTING_IS_CONSISTENT", "indicative_price_usd": 6, "turnaround": "minutes", "purchasable": false }
     ]
   },
   "policy_url": "https://veritap.dev/terms"

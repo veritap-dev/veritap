@@ -55,19 +55,24 @@ depends_on_real_world_fact
 Output: per_step[] with groundable, claim_type?, est_price?, alternative?,
 plus a plan_note. Steps with no real-world dependency are marked and skipped.
 
-### confirm_before_purchase / request_human_check / check_physical_condition
+### confirm_before_purchase / check_before_relying / check_physical_condition
 Aliases of check_feasibility with framings for different moments: before an
-irreversible spend, when a fact needs checking in the world, and when an item's
+irreversible spend, before relying on an inferred fact, and when an item's
 condition is the risk.
 
 ## Claim catalog
 
-BUSINESS_EXISTS_AND_OPERATING — $4, minutes, cached 30 days.
+PAID VERIFICATION IS NOT OPEN. No payment is taken today. The free checking
+layer — feasibility, triage, plan mapping — works now, and check_feasibility
+will say plainly when a claim is in scope but cannot yet be fulfilled. Prices
+below are indicative of what verification will cost when it opens.
+
+BUSINESS_EXISTS_AND_OPERATING — indicative ~$4, minutes, cached 30 days.
 A named business exists, is currently operating, contact details valid.
 Evidence: registry and listing cross-checks across independent sources plus
 captured source snapshots.
 
-LISTING_IS_CONSISTENT — $6, minutes, cached 14 days.
+LISTING_IS_CONSISTENT — indicative ~$6, minutes, cached 14 days.
 An online listing is internally consistent, corroborated across sources, free
 of common red flags. Evidence: structured red-flag checklist plus corroborating
 source snapshots.
@@ -76,7 +81,7 @@ Everything else returns not_yet and is logged.
 
 ## How results are worded
 
-Evidence bundles report observations with dates and sources — "the listed phone
+When verification opens, evidence bundles report observations with dates and sources — "the listed phone
 number was disconnected as of 11 August 2026", "two sources give different
 trading addresses". They never characterise a subject as a scam, fake, or
 illegitimate. Confidence reflects actual source agreement.
@@ -91,10 +96,10 @@ for FCRA-covered decisions about credit, employment, insurance, or housing.
 
 ## Limits, stated plainly
 
-Desk verification only. Nobody is dispatched to physically inspect anything, so
-"is the item actually on the lot today" is not answerable here. Two claim types
-are supported. We would rather name the boundary than imply a network that does
-not exist.
+Desk verification only, and not yet open for purchase. Nobody is dispatched to
+physically inspect anything, so "is the item actually on the lot today" is not
+answerable here at any price. Two claim types are in scope. We would rather
+name the boundary than imply a capability that does not exist.
 
 ## Data
 
