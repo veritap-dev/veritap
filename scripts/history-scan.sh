@@ -28,6 +28,19 @@ for sha in $(git rev-list --all); do
 done
 [ "$fail" = "0" ] && echo "  clean"
 
+echo "== author/committer identities =="
+# Added after the identity leak the two scans above were blind to: eight-plus
+# commits carried the operator's GitHub username in author/committer fields
+# while blobs and messages scanned clean. Metadata is content too.
+idfail=0
+while IFS= read -r ident; do
+  if echo "$ident" | grep -qiE "$PATTERNS"; then
+    echo "  $ident"
+    idfail=1; fail=1
+  fi
+done < <(git log --all --format='%an <%ae>%n%cn <%ce>' | sort -u)
+[ "$idfail" = "0" ] && echo "  clean"
+
 echo "== commit messages =="
 msgfail=0
 for sha in $(git rev-list --all); do
