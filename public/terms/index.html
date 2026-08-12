@@ -6,59 +6,52 @@
 <title>Terms &amp; privacy | Veritap</title>
 <meta name="description" content="How Veritap records requests, what it refuses, how verification results are worded, and how to request deletion.">
 <link rel="canonical" href="https://veritap.dev/terms">
-<style>
-:root{--fg:#16181d;--mut:#5c6270;--bg:#fff;--line:#e4e7ec;--acc:#1c5fd6}
-@media(prefers-color-scheme:dark){:root{--fg:#e8eaee;--mut:#9aa2b1;--bg:#101216;--line:#282c34;--acc:#7aa7ff}}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
-main{max-width:48rem;margin:0 auto;padding:3rem 1.25rem 5rem}
-h1{font-size:1.75rem;margin:0 0 1rem}
-h2{font-size:1.05rem;margin:2rem 0 .5rem}
-code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.875rem}
-ul{padding-left:1.1rem}
-a{color:var(--acc)}
-footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--line);color:var(--mut);font-size:.875rem}
-</style>
+<link rel="stylesheet" href="/veritap.css">
 </head>
 <body>
-<main>
-<p><a href="/">Veritap</a></p>
-<h1>Terms &amp; privacy</h1>
-<p>Last updated 11 August 2026.</p>
+<div class="wrap narrow">
+<header class="site-head">
+<a class="brand" href="/">veritap<span>.dev</span></a>
+<nav class="top-nav"><a href="/">home</a><a href="/docs">docs</a></nav>
+</header>
+<section class="doc-body">
+<h1 style="max-width:none">Terms &amp; privacy</h1>
+<p>Last updated 12 August 2026.</p>
 
-<h2>What we record</h2>
+<h2 class="doc">What we record</h2>
 <p>Every request to this service is recorded, including requests we cannot fulfil. We keep the claim described, any context supplied with it (location, deadline, stated budget, intended downstream action), and a pseudonymous caller identifier derived by hashing connection metadata. We do not require or collect an account to use the free checks.</p>
 <p>Requests are analysed in aggregate to decide what gets supported next. This is the primary purpose of the service: what agents ask for and we cannot answer is what determines the roadmap.</p>
 
-<h2>What we do not do with it</h2>
+<h2 class="doc">What we do not do with it</h2>
 <ul>
 <li>We do not sell or share data that identifies an individual caller.</li>
 <li>Anything shared externally is aggregated or anonymised.</li>
 <li>The full raw text of each request is discarded after 90 days; the structured summary is retained.</li>
 </ul>
 
-<h2>Claims about people are refused</h2>
+<h2 class="doc">Claims about people are refused</h2>
 <p>We do not verify facts about natural persons — identity, employment, income, tenancy, background, criminal history, or whereabouts. Such requests are refused, are <strong>not</strong> stored with their text, are not passed to any third party, and do not enter the roadmap. This is a fixed policy, not a capability gap, and rephrasing will not change the outcome.</p>
 <p>Veritap is not a consumer reporting agency and results must not be used for any purpose covered by the Fair Credit Reporting Act, including decisions about credit, employment, insurance, or housing.</p>
 
-<h2>How results are worded</h2>
+<h2 class="doc">How results are worded</h2>
 <p>Verification, when it opens, is multi-source desk research. Results report observed evidence with dates and sources — for example, "the listed phone number was disconnected as of 11 August 2026", or "two sources give different trading addresses". Results do not characterise a subject as fraudulent, fake, or illegitimate. Confidence reflects how well sources actually agree.</p>
 <p>A verification is a snapshot of what public sources showed at a stated time. It is not a guarantee, and it is not a substitute for your own judgement on a consequential decision.</p>
 
-<h2>Coverage</h2>
+<h2 class="doc">Coverage</h2>
 <p>We state what is supported rather than implying broader coverage. Today the free checking layer works — feasibility, triage, and plan mapping. Two claim types are in scope for verification, both desk-verifiable, and neither is open for purchase yet. Nobody is dispatched to inspect anything physically.</p>
 
-<h2>Deletion and access</h2>
+<h2 class="doc">Deletion and access</h2>
 <p>To request deletion, anonymisation, or a copy of records associated with you, email <a href="mailto:privacy@veritap.dev">privacy@veritap.dev</a>. Include enough detail to identify the requests. We will action valid requests within 30 days. Records may be deleted or anonymised on request notwithstanding the retention periods above.</p>
 
-<h2>Payment</h2>
+<h2 class="doc">Payment</h2>
 <p><strong>No payment is taken and paid verification is not currently available.</strong> All working functionality — feasibility checks, triage, and plan mapping — is free and requires no account. Prices shown elsewhere on this site are indicative of what verification will cost if and when it opens; they are not an offer to sell.</p>
 <p>Should paid verification open, these terms will be updated before any charge is made, and the following will apply: verifications are charged before the work runs, and because the output is research effort rather than a guaranteed answer, a verification that reaches only low confidence still returns the evidence gathered and is not refunded on the basis of the conclusion.</p>
 
-<h2>Contact</h2>
+<h2 class="doc">Contact</h2>
 <p><a href="mailto:hello@veritap.dev">hello@veritap.dev</a></p>
 
-<footer><a href="/">Home</a></footer>
-</main>
+</section>
+<footer class="site-foot"><nav><a href="/">Home</a><a href="/docs">Docs</a><a href="/llms.txt">llms.txt</a><a href="/agents.json">agents.json</a><a href="mailto:privacy@veritap.dev">privacy@veritap.dev</a></nav><p>Multi-source desk verification returning an evidence bundle. Indicative pricing only; live fulfillment is not yet open. Claims about individuals are excluded.</p></footer>
+</div>
 </body>
 </html>

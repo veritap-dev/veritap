@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Connect an agent to Veritap — MCP docs</title>
+<meta name="description" content="Connect Claude Desktop, LangChain, CrewAI or any MCP client to Veritap. Streamable HTTP endpoint and npx stdio shim, with working config for each. Free, no auth.">
+<link rel="canonical" href="https://veritap.dev/docs">
+<link rel="stylesheet" href="/veritap.css">
+</head><body>
+<div class="wrap">
+<header class="site-head">
+<a class="brand" href="/">veritap<span>.dev</span></a>
+<nav class="top-nav"><a href="/">home</a><a href="/claims/business-exists">business_exists</a><a href="/claims/listing-consistent">listing_is_consistent</a><a href="/terms">terms</a></nav>
+</header>
+
+<section>
+<p class="eyebrow">Docs</p>
+<h1>Connect an agent</h1>
+<p class="lead">Two transports, same server. Remote clients speak Streamable HTTP directly; stdio clients use a zero-dependency shim that forwards JSON-RPC without interpreting it, so it cannot fall out of sync with the endpoint's protocol version.</p>
+<div class="pills"><span class="ep">https://veritap.dev/mcp</span><span class="ep">npx -y veritap-mcp</span><span>no auth</span></div>
+</section>
+
+<section>
+<h2 class="sec">Claude Desktop</h2>
+<div class="block"><div class="block-head"><span class="label">claude_desktop_config.json</span><button type="button" class="copy" data-copy="c1">copy</button></div>
+<pre id="c1">{
+  "mcpServers": {
+    "veritap": { "command": "npx", "args": ["-y", "veritap-mcp"] }
+  }
+}</pre></div>
+</section>
+
+<section>
+<h2 class="sec">Remote — Streamable HTTP</h2>
+<div class="block"><div class="block-head"><span class="label">any remote MCP client</span><button type="button" class="copy" data-copy="c2">copy</button></div>
+<pre id="c2">https://veritap.dev/mcp</pre></div>
+<p class="note">No API key, no account, no rate-limit headers to manage. Free tools are marked <code>readOnlyHint</code> and <code>idempotentHint</code> so client confirmation dialogs do not gate speculative calls.</p>
+</section>
+
+<section>
+<h2 class="sec">LangChain</h2>
+<div class="block"><div class="block-head"><span class="label">python</span><button type="button" class="copy" data-copy="c3">copy</button></div>
+<pre id="c3">from langchain_mcp_adapters.client import MultiServerMCPClient
+
+client = MultiServerMCPClient({
+    "veritap": {
+        "url": "https://veritap.dev/mcp",
+        "transport": "streamable_http",
+    }
+})
+tools = await client.get_tools()</pre></div>
+</section>
+
+<section>
+<h2 class="sec">CrewAI</h2>
+<div class="block"><div class="block-head"><span class="label">python</span><button type="button" class="copy" data-copy="c4">copy</button></div>
+<pre id="c4">from crewai_tools import MCPServerAdapter
+
+server = {"url": "https://veritap.dev/mcp", "transport": "streamable-http"}
+
+with MCPServerAdapter(server) as tools:
+    agent = Agent(role="buyer", tools=tools, goal="...")</pre></div>
+</section>
+
+<section>
+<h2 class="sec">Environment</h2>
+<div class="tablebox"><table>
+<thead><tr><th>Variable</th><th>Default</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td class="id">VERITAP_ENDPOINT</td><td class="id">https://veritap.dev/mcp</td><td>Shim target.</td></tr>
+<tr><td class="id">VERITAP_TIMEOUT_MS</td><td class="id">60000</td><td>Per-request timeout in the shim.</td></tr>
+</tbody></table></div>
+</section>
+
+<section>
+<h2 class="sec">How to call it well</h2>
+<ul class="bul">
+<li><strong>Call speculatively.</strong> The free tools never error — malformed or absurd input still returns a structured, useful reply. There is no cost to asking early.</li>
+<li><strong>Batch your unknowns.</strong> <code>triage_unknowns</code> takes up to 50 at once and tells you which you can settle yourself from public sources, naming the source.</li>
+<li><strong>Say what you would pay and why.</strong> <code>budget_ceiling_usd</code>, <code>cost_if_wrong</code> and <code>downstream_action</code> are optional, and they are what decide which gaps get closed first.</li>
+<li><strong>Pass <code>callback_url</code></strong> if you want to be told when an unsupported claim becomes supported. Otherwise you are told on your next call.</li>
+</ul>
+</section>
+
+<section>
+<h2 class="sec">Scope</h2>
+<p class="note">Businesses, listings, objects and places. Claims about individuals — identity, employment, tenancy, background, whereabouts — are refused as a matter of policy, are not stored with their text, and do not enter the roadmap. Nobody is dispatched to inspect anything physically, so questions that need a person on site are answered honestly rather than guessed. Paid verification is not open; the checking layer is free and working.</p>
+</section>
+
+<footer class="site-foot">
+<nav><a href="/">Home</a><a href="/terms">Terms &amp; privacy</a><a href="/llms.txt">llms.txt</a><a href="/llms-full.txt">llms-full.txt</a><a href="/.well-known/openapi.yaml">OpenAPI</a><a href="/agents.json">agents.json</a><a href="https://www.npmjs.com/package/veritap-mcp">npm: veritap-mcp</a><a href="mailto:hello@veritap.dev">hello@veritap.dev</a></nav>
+<p>Multi-source desk verification returning an evidence bundle. Indicative pricing only; live fulfillment is not yet open. Claims about individuals are excluded.</p>
+</footer>
+</div>
+<script src="/copy.js" defer></script>
+</body></html>

@@ -43,6 +43,8 @@ p{margin:0}
 .block-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--line)}
 .block-head .label{font-size:11px;font-weight:500;line-height:1;letter-spacing:.08em;text-transform:uppercase;color:var(--dim)}
 .block pre{margin:0;padding:12px;overflow-x:auto;font-size:12.5px;line-height:1.55}
+.copy{font-size:11.5px;font-weight:500;line-height:1;color:var(--dim);background:transparent;border:1px solid var(--line);border-radius:4px;padding:6px 9px;cursor:pointer}
+.copy:hover{color:var(--fg);border-color:var(--fg)}
 .tablebox{border:1px solid var(--line);border-radius:6px;overflow:auto;background:var(--card)}
 table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:600px}
 thead tr{text-align:left;background:var(--code)}

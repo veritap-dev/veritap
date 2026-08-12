@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check before an agent commits money — Veritap</title>
+<meta name="description" content="Before an AI agent spends on a counterparty it has only seen online, check what can be corroborated. Free feasibility check over MCP; paid verification not open yet.">
+<link rel="canonical" href="https://veritap.dev/confirm-before-purchase">
+<link rel="stylesheet" href="/veritap.css">
+</head><body>
+<div class="wrap">
+<header class="site-head">
+<a class="brand" href="/">veritap<span>.dev</span></a>
+<nav class="top-nav"><a href="/">home</a><a href="/docs">docs</a><a href="/claims/listing-consistent">listing_is_consistent</a><a href="/claims/business-exists">business_exists</a></nav>
+</header>
+
+<section>
+<p class="eyebrow">Before an irreversible spend</p>
+<h1>The counterparty exists only as text until someone checks.</h1>
+<p class="lead">An agent about to send money has usually seen a page, not a business. The listing, the reviews, the contact details and the confidence are all the same kind of artefact: text that can be written by anyone. <code>confirm_before_purchase</code> asks what of it can actually be corroborated against independent sources — and says plainly when the answer is "not much, and here is what would settle it".</p>
+<div class="pills"><span class="ep">confirm_before_purchase</span><span>free to check</span><span>read-only</span></div>
+</section>
+
+<section>
+<h2 class="sec">Call it</h2>
+<div class="block"><div class="block-head"><span class="label">curl — runs verbatim</span><button type="button" class="copy" data-copy="cbp">copy</button></div>
+<pre id="cbp">curl -s https://veritap.dev/mcp -X POST \
+  -H 'Content-Type: application/json' \
+  -H 'Accept: application/json, text/event-stream' \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "tools/call",
+    "params": {
+      "name": "confirm_before_purchase",
+      "arguments": {
+        "claim_description": "Is Redline Equipment LLC a real operating business at the address on this invoice?",
+        "downstream_action": "wire a 12k deposit",
+        "cost_if_wrong": "12000 non-refundable"
+      }
+    }
+  }'</pre></div>
+<p class="note">This is an alias of <code>check_feasibility</code> — the same router under a framing that matches the moment. Which framing agents actually reach for is itself recorded, because that tells us how the problem is really shaped in practice.</p>
+</section>
+
+<section>
+<h2 class="sec">What comes back</h2>
+<div class="grid">
+<div class="card"><h3 class="card-t">In scope</h3><p>The matched claim type, the indicative price, and an honest note that paid fulfillment is not open yet.</p></div>
+<div class="card"><h3 class="card-t">Answerable by you</h3><p>If a public source settles it, you are told which one instead of being sold a check.</p></div>
+<div class="card"><h3 class="card-t">Not determinable</h3><p>Advice on planning around it — an explicit assumption plus a cheap way to detect it was wrong beats blocking.</p></div>
+<div class="card"><h3 class="card-t">Out of scope</h3><p>Anything about the seller as a person is refused, with the reason stated.</p></div>
+</div>
+</section>
+
+<section>
+<h2 class="sec">Honest limits</h2>
+<p class="note">This will not tell you a listing is a scam, because that is a characterisation and we do not make them. It will tell you that the same photo set appears on two listings at different prices, or that the registered entity was dissolved in March, and let you draw the conclusion. It cannot confirm the goods physically exist — nobody is sent to look. And paid verification is not open today, so what you get right now is a decision-grade answer about whether the fact is checkable, not the check itself.</p>
+</section>
+
+<footer class="site-foot">
+<nav><a href="/">Home</a><a href="/docs">Docs</a><a href="/terms">Terms &amp; privacy</a><a href="/llms.txt">llms.txt</a><a href="/agents.json">agents.json</a><a href="mailto:hello@veritap.dev">hello@veritap.dev</a></nav>
+<p>Multi-source desk verification returning an evidence bundle. Indicative pricing only; live fulfillment is not yet open. Claims about individuals are excluded.</p>
+</footer>
+</div>
+<script src="/copy.js" defer></script>
+</body></html>

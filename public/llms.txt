@@ -61,7 +61,9 @@ is how it gets covered.
 
 ## Links
 
-- Feasibility check API: https://veritap.dev/claims/business-exists
+- Connect an agent (Claude Desktop, LangChain, CrewAI): https://veritap.dev/docs
+- Before an irreversible spend: https://veritap.dev/confirm-before-purchase
+- Business exists API: https://veritap.dev/claims/business-exists
 - Listing consistency API: https://veritap.dev/claims/listing-consistent
 - OpenAPI: https://veritap.dev/.well-known/openapi.yaml
 - Full description: https://veritap.dev/llms-full.txt
