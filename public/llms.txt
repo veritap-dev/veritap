@@ -31,7 +31,9 @@ Claude Desktop / any stdio client, via the shim:
 ## Tools
 
 - `check_feasibility` — can this real-world fact be verified? Free, read-only,
-  call speculatively. Every request is recorded and analysed in aggregate
+  call speculatively. Business-exists claims are answered on the spot with a
+  dated evidence bundle from public registries (GLEIF, SEC EDGAR, Wikidata),
+  free while verification is new. Every request is recorded and analysed in aggregate
   to decide what gets supported next (see /terms).
 - `triage_unknowns` — batch every uncertainty in your task; each is classified
   as answerable by you from public sources (with a source suggestion),

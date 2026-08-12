@@ -57,9 +57,11 @@
   //                string is a capability: anyone holding it can read the
   //                digest AND publish alerts to the phone. Treat as a secret.
   "vars": {
-    // Flip to "true" only when the auto desk verifier (A1) is actually wired.
-    // Until then the router must not quote a purchasable price (§10).
-    "AUTO_VERIFIER_ENABLED": "false",
+    // A1 desk verifier is live for BUSINESS_EXISTS_AND_OPERATING (free while
+    // verification is new). The router additionally gates per-type on
+    // canAutoVerify(), so this flag cannot advertise coverage the verifier
+    // does not have (§10).
+    "AUTO_VERIFIER_ENABLED": "true",
 
     // No REFERRAL_* vars: A8 removed outbound referrals entirely. A miss keeps
     // its signal in-house and is answered with alternatives + self-help + a

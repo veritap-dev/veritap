@@ -13,6 +13,7 @@ import { CATALOG, closestAlternatives, matchClaimType, type ClaimTypeDef } from 
 import { sha256, writeLedger } from "./ledger.ts";
 import { checkPolicy, refusalMessage } from "./policy.ts";
 import { classifyUnknown } from "./triage.ts";
+import { canAutoVerify, runAutoVerifier } from "./verify.ts";
 import type {
   AttestationBundle,
   CallerAssessment,
@@ -74,6 +75,26 @@ async function lookupCache(env: Env, hash: string): Promise<CacheHit | null> {
   }
 }
 
+/**
+ * First write path into attestation_cache — until A1 the table had readers
+ * and no writer. Failure never fails the caller: a bundle we could not cache
+ * is still a bundle we can return.
+ */
+async function storeCache(env: Env, hash: string, bundle: AttestationBundle): Promise<void> {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO attestation_cache (claim_hash, bundle_json, valid_until, times_served, created_at)
+       VALUES (?1, ?2, ?3, 0, ?4)
+       ON CONFLICT(claim_hash) DO UPDATE SET
+         bundle_json = ?2, valid_until = ?3, created_at = ?4`,
+    )
+      .bind(hash, JSON.stringify(bundle), bundle.valid_until, new Date().toISOString())
+      .run();
+  } catch (err) {
+    console.error("CACHE_STORE_FAILED", { error: String(err) });
+  }
+}
+
 export interface RouteResult {
   feasible: Feasible;
   /** Set only on a hard policy refusal. No referral is offered alongside it. */
@@ -122,14 +143,17 @@ export interface RouteOptions {
  * Ladder:
  *   0. people-claim                  -> refuse, log redacted   (refused_policy)
  *   1. valid cached attestation      -> answer now             (fulfilled_cache)
- *   2. catalog match + verifier live -> purchasable price      (quoted_unpaid)
+ *   2. catalog match + desk verifier -> run it, free           (fulfilled_auto)
  *   3. catalog match, no verifier    -> honest defer + notify  (deferred_no_fulfiller)
  *   4. no catalog match              -> log the gap + notify   (unsupported)
  *
- * Step 2 only activates when AUTO_VERIFIER_ENABLED is set. Quoting a price we
- * cannot currently honour is exactly the "claim coverage that doesn't exist"
- * that §10 forbids, and the catalog's `fulfillment: "auto"` flag describes what
- * is automatable, not what is switched on.
+ * Step 2 gates on AUTO_VERIFIER_ENABLED AND canAutoVerify(def.id) — the env
+ * flag says the verifier subsystem is on, the capability check says it can
+ * answer THIS type. Gating on the flag alone would quote coverage that does
+ * not exist for auto-flagged types the verifier cannot handle yet (§10).
+ * Fulfillment is free while verification is new: no payment path exists, so
+ * `quoted_unpaid` stays unwritten, and a verifier miss (no extractable name)
+ * falls through to the honest defer rather than answering a guess.
  *
  * No path returns an outbound referral (A8). A miss keeps its signal in-house,
  * so it has to stay decision-grade on its own: closest alternatives, an honest
@@ -236,20 +260,28 @@ export async function route(
     };
   }
 
-  // --- 2. Catalog match + desk verifier live: a price the caller can actually buy. ---
-  if (def.fulfillment === "auto" && env.AUTO_VERIFIER_ENABLED === "true") {
-    const event_id = await log("quoted_unpaid", def.id, def.price_usd);
-    return {
-      feasible: "yes",
-      supported_claim_type: def.id,
-      est_price_usd: def.price_usd,
-      purchasable: true,
-      est_turnaround: def.turnaround,
-      closest_alternatives: closestAlternatives(description, def.id),
-      notify_when_supported: false,
-      event_id,
-      outcome: "quoted_unpaid",
-    };
+  // --- 2. Catalog match + desk verifier that can answer this type: run it now. ---
+  if (def.fulfillment === "auto" && env.AUTO_VERIFIER_ENABLED === "true" && canAutoVerify(def.id)) {
+    const bundle = await runAutoVerifier(input, def);
+    if (bundle) {
+      await storeCache(env, hash, bundle);
+      const triaged = classifyUnknown(description);
+      const event_id = await log("fulfilled_auto", def.id, 0, {
+        physical_presence: triaged.requires_physical_presence,
+      });
+      return {
+        feasible: "yes",
+        supported_claim_type: def.id,
+        est_price_usd: 0,
+        est_turnaround: "immediate (free while verification is new)",
+        closest_alternatives: closestAlternatives(description, def.id),
+        notify_when_supported: false,
+        cache_result: bundle,
+        event_id,
+        outcome: "fulfilled_auto",
+      };
+    }
+    // No extractable subject — fall through to the honest defer.
   }
 
   // --- 3. Catalog match, nothing able to answer it today. Say so plainly. ---
@@ -268,7 +300,7 @@ export async function route(
       classification: triaged.classification,
       note:
         `${def.id} is a supported claim type, but nothing is cached for this specific claim and ` +
-        `automated fulfillment is not switched on yet. ` +
+        `automated fulfillment is not available for it yet. ` +
         (triaged.classification === "web_answerable"
           ? triaged.note
           : "Register interest below and you will be told when it can be answered."),
