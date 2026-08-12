@@ -149,35 +149,86 @@ export async function drainPending(
  * Cron pass: re-match every waiting row against the current catalog, mark the
  * ones we can now answer, and fire callbacks where we have a URL.
  */
+const SWEEP_PAGE = 500;
+const SWEEP_MAX_PAGES = 20; // 10k waiting rows per nightly run
+
+/**
+ * Cron pass: re-match every waiting row against the current catalog, mark the
+ * ones we can now answer, and fire callbacks where we have a URL.
+ *
+ * Paged. The previous single `LIMIT 500` meant that once more than 500 rows
+ * were waiting, the sweep could only ever clear 500 per day while new ones
+ * accumulated — a backlog that never drains, silently, breaking the A8 promise
+ * that a caller hears back when their gap closes. Since A8 made this registry
+ * the only return path, that promise failing quietly is the whole flywheel
+ * failing quietly.
+ *
+ * The ready-marks are batched: one query per page rather than one per row.
+ */
 export async function sweepNotifications(env: Env): Promise<void> {
   try {
-    const { results } = await env.DB.prepare(
-      `SELECT id, claim_description, callback_url FROM notify_registry
-        WHERE ready_at IS NULL AND delivered_at IS NULL
-        LIMIT 500`,
-    ).all<{ id: number; claim_description: string; callback_url: string | null }>();
-
-    if (!results?.length) return;
-
     const now = new Date().toISOString();
     let readied = 0;
     let posted = 0;
+    let scanned = 0;
+    let lastId = 0;
 
-    for (const row of results) {
+    for (let page = 0; page < SWEEP_MAX_PAGES; page++) {
+      const { results } = await env.DB.prepare(
+        `SELECT id, claim_description, callback_url FROM notify_registry
+          WHERE ready_at IS NULL AND delivered_at IS NULL AND id > ?1
+          ORDER BY id LIMIT ?2`,
+      )
+        .bind(lastId, SWEEP_PAGE)
+        .all<{ id: number; claim_description: string; callback_url: string | null }>();
+
+      if (!results?.length) break;
+      scanned += results.length;
+      lastId = results[results.length - 1]!.id;
+
+      const ready = results.filter((r) => matchClaimType(r.claim_description));
+      if (ready.length) {
+        const upd = env.DB.prepare(`UPDATE notify_registry SET ready_at = ?1 WHERE id = ?2`);
+        await env.DB.batch(ready.map((r) => upd.bind(now, r.id)));
+        readied += ready.length;
+      }
+
+      posted += await fireCallbacks(env, ready, now, posted);
+      if (results.length < SWEEP_PAGE) break;
+    }
+
+    const { results: leftover } = await env.DB.prepare(
+      `SELECT count(*) AS n FROM notify_registry WHERE ready_at IS NULL AND delivered_at IS NULL`,
+    ).all<{ n: number }>();
+    const pending = leftover?.[0]?.n ?? 0;
+
+    console.log("NOTIFY_SWEEP", { scanned, readied, posted, pending });
+    if (pending > SWEEP_PAGE * SWEEP_MAX_PAGES) {
+      console.warn("NOTIFY_BACKLOG", { pending, note: "sweep is not keeping up; raise cadence or page cap" });
+    }
+  } catch (err) {
+    console.error("NOTIFY_SWEEP_FAILED", { error: String(err) });
+  }
+}
+
+/** POST the ready notices that supplied a callback. Returns how many landed. */
+async function fireCallbacks(
+  env: Env,
+  ready: Array<{ id: number; claim_description: string; callback_url: string | null }>,
+  now: string,
+  alreadyPosted: number,
+): Promise<number> {
+  let posted = 0;
+  try {
+    for (const row of ready) {
       const match = matchClaimType(row.claim_description);
       if (!match) continue;
-
-      await env.DB.prepare(`UPDATE notify_registry SET ready_at = ? WHERE id = ?`)
-        .bind(now, row.id)
-        .run();
-      readied++;
-
       if (!row.callback_url) continue;
       if (!isSafeCallbackUrl(row.callback_url)) {
         console.warn("NOTIFY_CALLBACK_BLOCKED", { id: row.id });
         continue;
       }
-      if (posted >= MAX_CALLBACKS_PER_SWEEP) continue;
+      if (alreadyPosted + posted >= MAX_CALLBACKS_PER_SWEEP) continue;
       try {
         const res = await fetch(row.callback_url, {
           method: "POST",
@@ -204,9 +255,8 @@ export async function sweepNotifications(env: Env): Promise<void> {
         // Leave it ready-but-undelivered; the next-call path still covers it.
       }
     }
-
-    console.log("NOTIFY_SWEEP", { scanned: results.length, readied, posted });
   } catch (err) {
-    console.error("NOTIFY_SWEEP_FAILED", { error: String(err) });
+    console.error("NOTIFY_CALLBACKS_FAILED", { error: String(err) });
   }
+  return posted;
 }

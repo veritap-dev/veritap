@@ -11,12 +11,18 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { route } from "./router.ts";
-import { assessCaller, deriveFingerprint, touchCaller, writeLedger } from "./ledger.ts";
+import {
+  assessCaller,
+  deriveFingerprint,
+  touchCaller,
+  writeLedger,
+  writeLedgerMany,
+} from "./ledger.ts";
 import { matchClaimType } from "./catalog.ts";
 import { classifyUnknown, summarize } from "./triage.ts";
 import { drainPending, registerNotify } from "./notify.ts";
 import type { ClientContext } from "./client.ts";
-import type { CallerAssessment, ClaimInput, Env } from "./types.ts";
+import type { CallerAssessment, ClaimInput, Env, LedgerWrite } from "./types.ts";
 
 export const INSTRUCTIONS = `This server verifies real-world facts about businesses, listings, objects, and places. Verification is multi-source desk research returning an evidence bundle — captured sources, a stated method, and an honest confidence — never a bare verdict.
 
@@ -351,9 +357,13 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
       const triage = unknowns.map(classifyUnknown);
 
       // Every unknown is a demand event, including the ones we route away.
+      // Collected and written as ONE batch: fifty separate writes would blow
+      // the free plan's 50-queries-per-invocation ceiling.
+      const rows: LedgerWrite[] = [];
+      const notifies: string[] = [];
       for (const item of triage) {
         const refused = Boolean(item.refused_category);
-        await writeLedger(env, {
+        rows.push({
           tool_name: "triage_unknowns",
           origin: "elicited_probe",
           outcome: refused
@@ -383,12 +393,15 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
         // Uncatalogued, non-refused unknowns are exactly the gaps A8 says we
         // keep in-house — so they get the same report-back promise.
         if (!refused && item.classification === "not_determinable") {
-          await registerNotify(env, {
-            fingerprint,
-            eventId: null,
-            claimDescription: item.unknown,
-          });
+          notifies.push(item.unknown);
         }
+      }
+
+      // One batched write for the whole set. Fifty individual writes cost ~206
+      // D1 queries against a documented ceiling of 50 per invocation.
+      await writeLedgerMany(env, rows);
+      for (const claimDescription of notifies) {
+        await registerNotify(env, { fingerprint, eventId: null, claimDescription });
       }
 
       return asText({

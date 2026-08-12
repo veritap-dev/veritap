@@ -58,27 +58,29 @@ export async function assessCaller(
   return assessment;
 }
 
-/** Returns true the first time the breaker opens today, so we alert once. */
+/**
+ * Returns true the first time the breaker opens today, so we alert once.
+ *
+ * Counts are passed in aggregate rather than one call per row: a 50-item
+ * triage must cost one counter update, not fifty. RETURNING collapses the
+ * old upsert+select into a single query — the free plan allows only 50 D1
+ * queries per Worker invocation, so every fixed query is worth removing.
+ */
 async function bumpCounters(
   env: Env,
-  opts: { wrote: boolean; suspect: boolean },
+  opts: { wrote: number; degraded: number; suspect: number },
 ): Promise<boolean> {
   try {
-    await env.DB.prepare(
+    const row = await env.DB.prepare(
       `INSERT INTO daily_counters (day, writes, degraded_writes, suspect_writes)
        VALUES (?1, ?2, ?3, ?4)
        ON CONFLICT(day) DO UPDATE SET
          writes = writes + ?2,
          degraded_writes = degraded_writes + ?3,
-         suspect_writes = suspect_writes + ?4`,
+         suspect_writes = suspect_writes + ?4
+       RETURNING writes, alerted`,
     )
-      .bind(utcDay(), opts.wrote ? 1 : 0, opts.wrote ? 0 : 1, opts.suspect ? 1 : 0)
-      .run();
-
-    const row = await env.DB.prepare(
-      `SELECT writes, alerted FROM daily_counters WHERE day = ?`,
-    )
-      .bind(utcDay())
+      .bind(utcDay(), opts.wrote, opts.degraded, opts.suspect)
       .first<{ writes: number; alerted: number }>();
 
     if (row && row.writes >= DAILY_WRITE_BREAKER && row.alerted === 0) {
@@ -160,6 +162,84 @@ export async function sha256(input: string): Promise<string> {
   return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+
+const INSERT_LEDGER_SQL = `INSERT INTO demand_ledger (
+         ts, tool_name, origin, parent_event_id, caller_fingerprint,
+         claim_description, claim_type, location_text, lat, lng,
+         budget_ceiling_usd, deadline, downstream_action, cost_if_wrong, task_context,
+         outcome, price_quoted, revenue_usd, raw_input_json, suspect,
+         client_name, client_version, client_ua, protocol_version
+       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+/** Bind list for one ledger row. Order must match INSERT_LEDGER_SQL exactly. */
+function ledgerBindings(w: LedgerWrite, now: string): unknown[] {
+  const loc = w.input.location;
+  return [
+    now,
+    w.tool_name,
+    w.origin,
+    w.parent_event_id ?? null,
+    w.caller_fingerprint ?? null,
+    w.input.claim_description ?? null,
+    w.claim_type ?? null,
+    loc?.text ?? null,
+    loc?.lat ?? null,
+    loc?.lng ?? null,
+    w.input.budget_ceiling_usd ?? null,
+    w.input.deadline ?? null,
+    w.input.downstream_action ?? null,
+    w.input.cost_if_wrong != null ? String(w.input.cost_if_wrong) : null,
+    w.input.task_context ?? null,
+    w.outcome,
+    w.price_quoted ?? null,
+    w.revenue_usd ?? null,
+    w.redacted ? null : JSON.stringify(w.raw ?? w.input),
+    w.suspect ? 1 : 0,
+    w.client?.name ?? null,
+    w.client?.version ?? null,
+    w.client?.userAgent ?? null,
+    w.client?.protocol ?? null,
+  ];
+}
+
+/**
+ * Append MANY demand events in one round trip.
+ *
+ * `triage_unknowns` accepts up to 50 unknowns and each becomes its own row.
+ * Writing them one at a time cost ~4 D1 queries each — roughly 206 for a full
+ * batch, against a documented free-plan ceiling of 50 queries per Worker
+ * invocation. It worked only because the limit is not currently enforced, and
+ * the failure mode if it ever is would be the worst available: writeLedger
+ * swallows errors by design, so rows would vanish while every response still
+ * said "ok". Silent loss of the asset the project exists to build.
+ *
+ * db.batch() sends the whole set as one statement group, so a 50-row triage
+ * now costs ~2 queries instead of ~206.
+ *
+ * Returns nothing: batch cannot hand back per-row ids. Callers that need an
+ * id (the router, for parent_event_id linking) use writeLedger instead.
+ */
+export async function writeLedgerMany(env: Env, writes: LedgerWrite[]): Promise<void> {
+  if (!writes.length) return;
+  const now = new Date().toISOString();
+
+  const degraded = writes.filter((w) => w.degraded).length;
+  const live = writes.filter((w) => !w.degraded);
+  const suspect = live.filter((w) => w.suspect).length;
+
+  try {
+    if (live.length) {
+      const stmt = env.DB.prepare(INSERT_LEDGER_SQL);
+      await env.DB.batch(live.map((w) => stmt.bind(...ledgerBindings(w, now))));
+    }
+    if (await bumpCounters(env, { wrote: live.length, degraded, suspect })) {
+      await alertBreaker(env);
+    }
+  } catch (err) {
+    console.error("LEDGER_BATCH_LOST", { count: writes.length, error: String(err) });
+  }
+}
+
 /**
  * Append one demand event. Returns the row id so follow-ups and escalations can
  * link back via parent_event_id (this is what makes probe->request conversion
@@ -172,7 +252,7 @@ export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | nu
   // Breaker open: keep answering the caller normally, but stop storing detail.
   // The counter still moves, so the flood remains visible in aggregate.
   if (w.degraded) {
-    if (await bumpCounters(env, { wrote: false, suspect: false })) await alertBreaker(env);
+    if (await bumpCounters(env, { wrote: 0, degraded: 1, suspect: 0 })) await alertBreaker(env);
     return null;
   }
 
@@ -216,7 +296,7 @@ export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | nu
       )
       .first<{ id: number }>();
 
-    if (await bumpCounters(env, { wrote: true, suspect: Boolean(w.suspect) }))
+    if (await bumpCounters(env, { wrote: 1, degraded: 0, suspect: w.suspect ? 1 : 0 }))
       await alertBreaker(env);
 
     return row?.id ?? null;

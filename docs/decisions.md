@@ -1,3 +1,84 @@
+# Scale limits and the cost ceiling — 2026-08-12
+
+## The one that mattered: 4x over a documented hard limit
+
+Cloudflare's free plan allows **50 D1 queries per Worker invocation** and 50
+subrequests per request; binding calls count. Measured from the code, a call
+cost 6 fixed queries plus 4 per ledger row — so a 50-item `triage_unknowns`
+issued **~206 queries**. Tested against production at 3/8/12/20/50 items: all
+succeeded and every row landed, so the limit is simply not enforced today.
+
+That is the alarming reading, not the reassuring one. `writeLedger` swallows
+errors so a ledger failure never breaks a caller's response. If that limit is
+ever enforced — or enforced under load — rows vanish while every response still
+says "ok". Silent degradation of the one asset the project exists to build.
+
+Fixed by batching: `writeLedgerMany` sends the whole set through `db.batch()`
+and bumps the daily counter **once in aggregate** rather than per row.
+A 50-row triage went from ~206 queries to ~8. Verified in production: 50 rows
+written, one counter bump of 50, zero errors.
+
+Two smaller query savings: `bumpCounters` now uses `RETURNING` instead of
+upsert-then-select, and the notify sweep batches its ready-marks.
+
+## Two more silent failures, both fixed
+
+**Notify sweep could never drain.** A single `LIMIT 500` per nightly cron meant
+that past 500 waiting rows the backlog grew faster than it cleared — and since
+A8 made this registry the *only* return path, that promise would have failed
+quietly and taken the flywheel with it. Now paged (20 x 500), batched, and it
+logs `NOTIFY_BACKLOG` when it still cannot keep up.
+
+**Retention UPDATE was unbounded.** D1 caps a query at 30 seconds, so on a large
+table the nightly scrub starts timing out, gets caught and logged, and raw
+payloads quietly stop being discarded while `/terms` keeps promising a 90-day
+deletion. Now paged, with a `still_pending` count on every run.
+
+It also compared ISO-8601 `ts` against SQLite `datetime()` — `'T' > ' '` in a
+string comparison, so the 90-day boundary was fuzzy by up to a day. Third
+appearance of this exact trap (after the A15 hourly window). **Any timestamp
+comparison in this codebase must use the same ISO format both sides.**
+
+## Billing: a surprise bill is structurally impossible right now
+
+Workers plan is **Free** (confirmed in the dashboard). Free has no usage
+billing at all: at 100,000 requests/day the platform returns Error 1027 and
+stops serving until midnight UTC. D1 likewise stops. The only recurring cost on
+this project is the domain, $12.20/yr on auto-renew.
+
+So the failure mode is **service stops**, not **bill arrives** — which is
+exactly the posture §12's kill/pivot signal wants ("freeze at zero-cost idle").
+
+The corollary is the thing actually worth worrying about: on free, hitting the
+cap means requests are **rejected**, and rejected demand events are lost
+forever. For this project that is worse than a bill. The A15 breaker guards
+ledger writes at 20k/day, but Workers requests — including tool-list
+inspections, which are already the majority of traffic — can reach 100k
+independently of it.
+
+Exposure only begins if someone upgrades to Workers Paid ($5/mo + usage:
+$0.30/million requests, $0.02/million CPU-ms). Do not upgrade without a spend
+alert configured first.
+
+## Where it breaks, in order
+
+| # | Limit | Binds at | Status |
+|---|---|---|---|
+| 1 | D1 50 queries/invocation | was ~11 unknowns | **fixed** — now ~8 queries at 50 |
+| 2 | A15 breaker, 20k ledger rows/day | 20k | by design, trips first |
+| 3 | D1 100k rows written/day | ~33k simple calls | ~3 row-writes per ledger row |
+| 4 | Workers 100k requests/day | 100k | **cap = dropped traffic = lost data** |
+| 5 | D1 free max DB size 500 MB | ~330k rows | 90-day raw scrub bounds it |
+| 6 | notify sweep drain rate | >10k waiting | **fixed** — paged |
+| 7 | retention query duration | millions of rows | **fixed** — paged |
+| 8 | D1 single-threaded, ~1000 q/s | ~100 calls/sec | not near-term |
+
+Calibration note on the A15 breaker: 20k ledger rows/day is roughly 60k D1
+rows written once counters and caller upserts are included — about 60% of the
+free daily allowance, not the wide margin the number suggests.
+
+---
+
 # First external traffic — 2026-08-12, and the test-data purge
 
 Purged my own smoke-test traffic from production so the §12 metrics start from

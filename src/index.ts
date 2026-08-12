@@ -76,28 +76,78 @@ async function recordInspection(
  * dataset; the raw blob is only schema-drift insurance and is the field most
  * likely to contain third-party PII.
  */
+const RETENTION_PAGE = 500;
+const RETENTION_MAX_PAGES = 40; // 20k rows per nightly run
+
+/**
+ * Retention (§7 as amended): structured rows kept indefinitely, raw_input_json
+ * nulled after 90 days.
+ *
+ * Two bugs fixed here, both of which fail silently:
+ *
+ * 1. The UPDATE was unbounded. D1 caps a query at 30 seconds, so once the
+ *    table is large enough the sweep starts timing out — and the failure is
+ *    caught and logged, meaning raw payloads quietly stop being scrubbed while
+ *    the terms page keeps promising a 90-day discard. Now paged.
+ *
+ * 2. It compared an ISO-8601 `ts` ("2026-05-14T10:00:00.000Z") against
+ *    SQLite's datetime() ("2026-05-14 10:00:00"). These are string-compared,
+ *    and 'T' > ' ', so the boundary was fuzzy by up to a day. strftime with
+ *    the matching format makes the comparison exact — the same format trap
+ *    that made the A15 hourly window silently miss rows.
+ */
 async function runRetention(env: Env): Promise<void> {
+  const cutoff = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  let scrubbed = 0;
+  let purged = 0;
+
   try {
-    const res = await env.DB.prepare(
-      `UPDATE demand_ledger
-          SET raw_input_json = NULL
-        WHERE raw_input_json IS NOT NULL
-          AND ts < datetime('now', '-90 days')`,
-    ).run();
-    // The notify registry holds caller-supplied claim text too, and a promise
-    // that has been kept has no reason to be retained.
-    const notices = await env.DB.prepare(
-      `DELETE FROM notify_registry
-        WHERE delivered_at IS NOT NULL
-          AND delivered_at < datetime('now', '-90 days')`,
-    ).run();
+    for (let page = 0; page < RETENTION_MAX_PAGES; page++) {
+      const res = await env.DB.prepare(
+        `UPDATE demand_ledger SET raw_input_json = NULL
+          WHERE id IN (
+            SELECT id FROM demand_ledger
+             WHERE raw_input_json IS NOT NULL AND ts < ?1
+             LIMIT ?2)`,
+      )
+        .bind(cutoff, RETENTION_PAGE)
+        .run();
+      const n = res.meta?.changes ?? 0;
+      scrubbed += n;
+      if (n < RETENTION_PAGE) break;
+    }
+
+    for (let page = 0; page < RETENTION_MAX_PAGES; page++) {
+      const res = await env.DB.prepare(
+        `DELETE FROM notify_registry
+          WHERE id IN (
+            SELECT id FROM notify_registry
+             WHERE delivered_at IS NOT NULL AND delivered_at < ?1
+             LIMIT ?2)`,
+      )
+        .bind(cutoff, RETENTION_PAGE)
+        .run();
+      const n = res.meta?.changes ?? 0;
+      purged += n;
+      if (n < RETENTION_PAGE) break;
+    }
+
+    const remaining = await env.DB.prepare(
+      `SELECT count(*) AS n FROM demand_ledger WHERE raw_input_json IS NOT NULL AND ts < ?`,
+    )
+      .bind(cutoff)
+      .first<{ n: number }>();
 
     console.log("RETENTION_SWEEP", {
-      rows_scrubbed: res.meta?.changes ?? 0,
-      notices_purged: notices.meta?.changes ?? 0,
+      rows_scrubbed: scrubbed,
+      notices_purged: purged,
+      still_pending: remaining?.n ?? 0,
     });
+    if ((remaining?.n ?? 0) > 0) {
+      console.warn("RETENTION_BACKLOG", { pending: remaining?.n, note: "raise RETENTION_MAX_PAGES or run more often" });
+    }
   } catch (err) {
-    console.error("RETENTION_SWEEP_FAILED", { error: String(err) });
+    console.error("RETENTION_SWEEP_FAILED", { scrubbed, purged, error: String(err) });
   }
 }
 
