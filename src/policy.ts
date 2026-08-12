@@ -72,6 +72,16 @@ const SIGNALS: Array<{ category: RefusalCategory; patterns: RegExp[] }> = [
       /\b(does|did)\s+(he|she|they|this person|the candidate|the applicant)\s+(actually\s+)?work\s+(at|for)\b/,
       /\b(his|her|their)\s+(employer|salary|income|job title|pay stub)\b/,
       /\bverify\s+(their|his|her)\s+employment\b/,
+      // Caught in production on live external traffic: the gate covered
+      // "employment VERIFICATION" but not "employment HISTORY", so
+      // "What was <name>'s employment history in 2023?" sailed through and its
+      // text was stored. `<thing> history` is the natural phrasing for exactly
+      // the FCRA-shaped question we exclude.
+      /\b(employment|work|job|rental|tenancy|credit|medical|salary|income|residence)\s+histor(y|ies)\b/,
+      /\bhistor(y|ies)\s+of\s+(a|an|this|the)\s+(person|individual|employee|applicant|candidate|tenant|worker)\b/,
+      // "Verify <anything> of an individual" — the request is about the person
+      // regardless of which attribute is named.
+      /\b(verify|confirm|check|look up|find)\b.{0,60}?\b(of|for|about)\s+(a|an|this|the)\s+(person|individual|named individual)\b/,
     ],
   },
   {

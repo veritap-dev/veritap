@@ -32,6 +32,14 @@ const MUST_REFUSE: string[] = [
   // Caught live by the triage battery, not by the original pattern set.
   "Confirm the seller Mark Doyle is who he says he is",
   "Verify the account holder is who they claim to be",
+  // Caught in PRODUCTION on live external traffic 2026-08-12 — the gate stored
+  // a named individual before these were added. Verbatim, so they can never
+  // regress silently.
+  "What was Ahmad Fauzans employment history in 2023?",
+  "Verify employment history of an individual",
+  "Pull the work history for this applicant",
+  "What is the rental history of this tenant",
+  "Look up the credit history of an individual",
 ];
 
 const MUST_PASS: string[] = [
@@ -49,6 +57,11 @@ const MUST_PASS: string[] = [
   "Does this integration work for enterprise plans?",
   "Verify the listing photos match the actual property condition",
   "Is Bright Star Plumbing LLC a registered business in Tennessee?",
+  // Real external traffic that MUST keep working — businesses, not people.
+  "PT Telkom Indonesia Tbk is a currently operating publicly listed telecommunications company",
+  "Is PT Telkom Indonesia still operating as a listed company?",
+  "Does the supplier at this marketplace listing actually ship from Jakarta?",
+  "What is the trading history of this listed company?",
 ];
 
 let failures = 0;
