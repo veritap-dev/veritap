@@ -1,0 +1,504 @@
+{
+  "author": "veritap-dev",
+  "authorUrl": "https://github.com/veritap-dev",
+  "cloudEndpoint": "https://veritap.dev/mcp",
+  "description": "Check whether a real-world fact can be verified before an agent acts on it. Business-exists claims answered on the spot with dated evidence bundles from public registries (GLEIF, SEC EDGAR, Wikidata) \u2014 free, no auth, read-only. Claims about individual people are refused by policy.",
+  "homepage": "https://github.com/veritap-dev/veritap",
+  "identifier": "veritap-dev-veritap",
+  "name": "Veritap",
+  "prompts": [],
+  "resources": [],
+  "tools": [
+    {
+      "name": "check_feasibility",
+      "title": "Check whether a real-world fact can be verified",
+      "description": "Check whether a real-world fact can be verified before committing to a paid request. Free, no auth, read-only, no side effects \u2014 call liberally during planning.\n\nUse speculatively: if any step of your task depends on a physical-world fact you cannot confirm (in stock, exists at location, condition, document authenticity, work completed), check here first. Covers businesses, listings, objects, and places. Unsupported claims are logged and prioritized for future support. Never errors.\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "claim_description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Free text. The real-world fact you need settled. Required."
+          },
+          "claim_type": {
+            "description": "Optional. A claim type id from the published catalog, if you know it.",
+            "type": "string",
+            "maxLength": 120
+          },
+          "location": {
+            "description": "Where the fact must be checked.",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              }
+            }
+          },
+          "deadline": {
+            "description": "ISO8601. When the answer stops being useful.",
+            "type": "string",
+            "maxLength": 64
+          },
+          "budget_ceiling_usd": {
+            "description": "Most you would pay for this answer. Directly drives what gets built next.",
+            "type": "number"
+          },
+          "downstream_action": {
+            "description": "What you will do with the answer once you have it.",
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cost_if_wrong": {
+            "description": "What happens to your task if this fact is wrong: \"blocks_task\", \"degrades_answer\", or \"cosmetic\".",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blocks_task",
+                  "degrades_answer",
+                  "cosmetic"
+                ]
+              },
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "task_context": {
+            "description": "The wider task this step belongs to.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "callback_url": {
+            "description": "Optional. If this claim is not supported yet, POST here when it becomes supported. Otherwise you are told on your next call.",
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "claim_description"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "confirm_before_purchase",
+      "title": "Confirm a listing or seller is real before spending money",
+      "description": "Check whether a listing, item, or business can be corroborated before an agent commits money. Free, read-only, no side effects.\n\nUse before any irreversible spend where the counterparty or the goods have only been seen online. Returns what can be corroborated from sources, what cannot, and \u2014 when it cannot \u2014 whether you could settle it yourself and how to proceed if not.\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "claim_description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Free text. The real-world fact you need settled. Required."
+          },
+          "claim_type": {
+            "description": "Optional. A claim type id from the published catalog, if you know it.",
+            "type": "string",
+            "maxLength": 120
+          },
+          "location": {
+            "description": "Where the fact must be checked.",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              }
+            }
+          },
+          "deadline": {
+            "description": "ISO8601. When the answer stops being useful.",
+            "type": "string",
+            "maxLength": 64
+          },
+          "budget_ceiling_usd": {
+            "description": "Most you would pay for this answer. Directly drives what gets built next.",
+            "type": "number"
+          },
+          "downstream_action": {
+            "description": "What you will do with the answer once you have it.",
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cost_if_wrong": {
+            "description": "What happens to your task if this fact is wrong: \"blocks_task\", \"degrades_answer\", or \"cosmetic\".",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blocks_task",
+                  "degrades_answer",
+                  "cosmetic"
+                ]
+              },
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "task_context": {
+            "description": "The wider task this step belongs to.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "callback_url": {
+            "description": "Optional. If this claim is not supported yet, POST here when it becomes supported. Otherwise you are told on your next call.",
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "claim_description"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "check_before_relying",
+      "title": "Check a fact before relying on it",
+      "description": "Check whether a fact can be corroborated before your task depends on it. Free, read-only, no side effects.\n\nUse when a step rests on something you have only inferred from text and being wrong would be expensive. Returns whether it can be corroborated from sources today, what evidence would come back, and an honest answer when it cannot.\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "claim_description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Free text. The real-world fact you need settled. Required."
+          },
+          "claim_type": {
+            "description": "Optional. A claim type id from the published catalog, if you know it.",
+            "type": "string",
+            "maxLength": 120
+          },
+          "location": {
+            "description": "Where the fact must be checked.",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              }
+            }
+          },
+          "deadline": {
+            "description": "ISO8601. When the answer stops being useful.",
+            "type": "string",
+            "maxLength": 64
+          },
+          "budget_ceiling_usd": {
+            "description": "Most you would pay for this answer. Directly drives what gets built next.",
+            "type": "number"
+          },
+          "downstream_action": {
+            "description": "What you will do with the answer once you have it.",
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cost_if_wrong": {
+            "description": "What happens to your task if this fact is wrong: \"blocks_task\", \"degrades_answer\", or \"cosmetic\".",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blocks_task",
+                  "degrades_answer",
+                  "cosmetic"
+                ]
+              },
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "task_context": {
+            "description": "The wider task this step belongs to.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "callback_url": {
+            "description": "Optional. If this claim is not supported yet, POST here when it becomes supported. Otherwise you are told on your next call.",
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "claim_description"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "check_physical_condition",
+      "title": "Check the condition or grading of a physical item",
+      "description": "Check the stated condition, damage, or grading of a physical item or property. Free, read-only, no side effects.\n\nUse when a decision depends on an item being in the condition a listing claims. Returns what can be corroborated from sources today, and says plainly when physical inspection is what is actually required \u2014 nobody is sent to look.\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "claim_description": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Free text. The real-world fact you need settled. Required."
+          },
+          "claim_type": {
+            "description": "Optional. A claim type id from the published catalog, if you know it.",
+            "type": "string",
+            "maxLength": 120
+          },
+          "location": {
+            "description": "Where the fact must be checked.",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "lat": {
+                "type": "number"
+              },
+              "lng": {
+                "type": "number"
+              }
+            }
+          },
+          "deadline": {
+            "description": "ISO8601. When the answer stops being useful.",
+            "type": "string",
+            "maxLength": 64
+          },
+          "budget_ceiling_usd": {
+            "description": "Most you would pay for this answer. Directly drives what gets built next.",
+            "type": "number"
+          },
+          "downstream_action": {
+            "description": "What you will do with the answer once you have it.",
+            "type": "string",
+            "maxLength": 1000
+          },
+          "cost_if_wrong": {
+            "description": "What happens to your task if this fact is wrong: \"blocks_task\", \"degrades_answer\", or \"cosmetic\".",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "blocks_task",
+                  "degrades_answer",
+                  "cosmetic"
+                ]
+              },
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "number"
+              }
+            ]
+          },
+          "task_context": {
+            "description": "The wider task this step belongs to.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "callback_url": {
+            "description": "Optional. If this claim is not supported yet, POST here when it becomes supported. Otherwise you are told on your next call.",
+            "type": "string",
+            "maxLength": 2048,
+            "format": "uri"
+          }
+        },
+        "required": [
+          "claim_description"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "plan_verification",
+      "title": "Map which steps of a plan depend on unverified real-world facts",
+      "description": "Map a multi-step plan against what can be grounded in the real world. Free, no auth, read-only, no side effects \u2014 call liberally during planning.\n\nPass your whole plan, including steps you have not decomposed into questions yet. Returns, per step, whether it rests on a checkable real-world fact, which claim type would settle it, and what to do about the steps that cannot be grounded.\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "goal": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "What the overall plan is trying to achieve."
+          },
+          "steps": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "description": {
+                  "type": "string",
+                  "maxLength": 1000,
+                  "description": "What this step does."
+                },
+                "depends_on_real_world_fact": {
+                  "description": "The physical-world fact this step assumes, if any.",
+                  "type": "string",
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "description"
+              ]
+            },
+            "description": "The plan, in order."
+          }
+        },
+        "required": [
+          "goal",
+          "steps"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    },
+    {
+      "name": "triage_unknowns",
+      "title": "Triage a batch of uncertainties into answerable, verifiable, or neither",
+      "description": "Triage everything you are uncertain about in one call. Free, instant, read-only, no side effects \u2014 call liberally during planning.\n\nDump every uncertainty at once, mid-reasoning, before deciding which are worth chasing. Each is classified as answerable by you from public sources (with a suggested source), verifiable here (with price and turnaround), or not determinable (with advice on planning around it). Items you can settle yourself are honestly routed away rather than sold to you.\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "unknowns": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "claim": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 1000,
+                      "description": "The uncertainty itself."
+                    },
+                    "why_it_matters": {
+                      "description": "What this specific unknown gates in your task.",
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "if_unresolved": {
+                      "description": "What happens to your task if this stays unknown.",
+                      "type": "string",
+                      "enum": [
+                        "blocks_task",
+                        "degrades_answer",
+                        "cosmetic"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "claim"
+                  ]
+                }
+              ]
+            },
+            "description": "Every uncertainty in the task. Batch them \u2014 this is one call. Objects with why_it_matters and if_unresolved get sharper triage than bare strings."
+          },
+          "task_context": {
+            "description": "What you are trying to accomplish.",
+            "type": "string",
+            "maxLength": 2000
+          },
+          "downstream_action": {
+            "description": "What resolving these would let you do.",
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "unknowns"
+        ],
+        "$schema": "https://json-schema.org/draft/2020-12/schema"
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": true
+      }
+    }
+  ],
+  "version": "0.1.3"
+}
