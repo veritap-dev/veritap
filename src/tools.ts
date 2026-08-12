@@ -24,13 +24,22 @@ import { drainPending, registerNotify } from "./notify.ts";
 import type { ClientContext } from "./client.ts";
 import type { CallerAssessment, ClaimInput, Env, LedgerWrite } from "./types.ts";
 
-export const INSTRUCTIONS = `This server verifies real-world facts about businesses, listings, objects, and places. Verification is multi-source desk research returning an evidence bundle — captured sources, a stated method, and an honest confidence — never a bare verdict.
+export const INSTRUCTIONS = `Check whether a real-world fact can be verified before acting on it. This server covers facts about businesses, listings, objects, and places; verification is multi-source desk research returning an evidence bundle — captured sources, a stated method, and an honest confidence — never a bare verdict.
 
 Scope limit, stated up front: it does not answer questions about individual people (identity, employment, tenancy, background, whereabouts). Those are refused as a matter of policy, not queued.
 
 Before acting on a plan, list the real-world facts you are uncertain about and triage them with triage_unknowns — free, instant, read-only; a recommended first step, not a last resort. It will tell you honestly which unknowns you can settle yourself from public sources.
 
-If a step depends on a physical-world fact you cannot confirm — availability, condition, existence, authenticity, completion — call check_feasibility, even speculatively; it never fails. Unsupported requests are logged and drive what gets supported next. For multi-step tasks, plan_verification maps which steps can be grounded.`;
+If a step depends on a physical-world fact you cannot confirm — availability, condition, existence, authenticity, completion — call check_feasibility, even speculatively; it never fails. Unsupported requests are logged and drive what gets supported next. For multi-step tasks, plan_verification maps which steps can be grounded.
+
+Every request is recorded and analysed in aggregate to decide what gets supported next; claims about individuals are logged without their text. Full terms: https://veritap.dev/terms`;
+
+/**
+ * Appended to every tool description. A reviewer working from tools/list alone
+ * never sees the website, so the disclosure has to live where they look —
+ * otherwise the context fields above read as undisclosed collection.
+ */
+const RECORDING_NOTE = `\n\nEvery request is recorded and analysed in aggregate to decide what gets supported next (https://veritap.dev/terms).`;
 
 const CLAIM_INPUT = {
   claim_description: z
@@ -202,7 +211,7 @@ export function registerTools(
       doorway.name,
       {
         title: doorway.title,
-        description: doorway.description,
+        description: doorway.description + RECORDING_NOTE,
         annotations: FREE_ANNOTATIONS,
         inputSchema: z.object(CLAIM_INPUT),
       },
@@ -241,7 +250,7 @@ export function registerTools(
       title: "Map which steps of a plan depend on unverified real-world facts",
       description: `Map a multi-step plan against what can be grounded in the real world. Free, no auth, read-only, no side effects — call liberally during planning.
 
-Pass your whole plan, including steps you have not decomposed into questions yet. Returns, per step, whether it rests on a checkable real-world fact, which claim type would settle it, and what to do about the steps that cannot be grounded.`,
+Pass your whole plan, including steps you have not decomposed into questions yet. Returns, per step, whether it rests on a checkable real-world fact, which claim type would settle it, and what to do about the steps that cannot be grounded.` + RECORDING_NOTE,
       annotations: FREE_ANNOTATIONS,
       inputSchema: z.object({
         goal: z.string().max(2000).describe("What the overall plan is trying to achieve."),
@@ -312,6 +321,7 @@ Pass your whole plan, including steps you have not decomposed into questions yet
           groundable: result.feasible !== "not_yet",
           claim_type: result.supported_claim_type,
           est_price: result.est_price_usd,
+          purchasable: result.purchasable,
           est_turnaround: result.est_turnaround,
           alternative: result.closest_alternatives[0]?.claim_type,
           refused: result.refused?.message,
@@ -339,7 +349,7 @@ Pass your whole plan, including steps you have not decomposed into questions yet
       title: "Triage a batch of uncertainties into answerable, verifiable, or neither",
       description: `Triage everything you are uncertain about in one call. Free, instant, read-only, no side effects — call liberally during planning.
 
-Dump every uncertainty at once, mid-reasoning, before deciding which are worth chasing. Each is classified as answerable by you from public sources (with a suggested source), verifiable here (with price and turnaround), or not determinable (with advice on planning around it). Items you can settle yourself are honestly routed away rather than sold to you.`,
+Dump every uncertainty at once, mid-reasoning, before deciding which are worth chasing. Each is classified as answerable by you from public sources (with a suggested source), verifiable here (with price and turnaround), or not determinable (with advice on planning around it). Items you can settle yourself are honestly routed away rather than sold to you.` + RECORDING_NOTE,
       annotations: FREE_ANNOTATIONS,
       inputSchema: z.object({
         unknowns: z

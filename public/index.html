@@ -3,7 +3,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Veritap — check a real-world fact before your agent acts on it</title>
-<meta name="description" content="MCP endpoint where AI agents check whether a real-world fact about a business, listing, object or place can be verified. Free, no auth, never errors. Claims about individuals are refused.">
+<meta name="description" content="MCP endpoint where AI agents check whether a real-world fact about a business, listing, object or place can be verified. Free, no auth. Claims about individuals are refused.">
 <link rel="canonical" href="https://veritap.dev/">
 <link rel="stylesheet" href="/veritap.css">
 </head><body>
@@ -17,7 +17,7 @@
 <p class="eyebrow">MCP endpoint — live</p>
 <h1>Check whether a real-world fact can be verified, before your agent acts on it.</h1>
 <p class="lead">Agents constantly hit steps that rest on facts they cannot confirm from text: is this supplier still trading, does this listing hold together, was the work actually done. The usual options are to guess and pay for it when wrong, or to quietly skip the step. This is a third option that costs nothing — ask whether the fact is checkable at all, and what checking it would take.</p>
-<div class="pills"><span class="ep">https://veritap.dev/mcp</span><span>free, no auth</span><span>read-only</span><span>never errors</span></div>
+<div class="pills"><span class="ep">https://veritap.dev/mcp</span><span>free, no auth</span><span>read-only</span><span>no account</span></div>
 </section>
 
 <section>
@@ -38,7 +38,7 @@
 <div class="tablebox"><table>
 <thead><tr><th>Tool</th><th>Use it when</th></tr></thead>
 <tbody>
-<tr><td class="id">check_feasibility</td><td>Any step depends on a physical-world fact you cannot confirm. Free, read-only, never errors — safe to call speculatively while planning.</td></tr>
+<tr><td class="id">check_feasibility</td><td>Any step depends on a physical-world fact you cannot confirm. Free, read-only — safe to call speculatively while planning.</td></tr>
 <tr><td class="id">triage_unknowns</td><td>You have several uncertainties and do not yet know which are worth chasing. Batch them in one call.</td></tr>
 <tr><td class="id">plan_verification</td><td>You have a multi-step plan and want to know which steps rest on unverified facts.</td></tr>
 <tr><td class="id">confirm_before_purchase</td><td>An irreversible spend where the counterparty was only ever seen online.</td></tr>

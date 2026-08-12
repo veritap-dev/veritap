@@ -80,6 +80,13 @@ export interface RouteResult {
   refused?: { category: string; message: string };
   supported_claim_type?: string;
   est_price_usd?: number;
+  /**
+   * Whether est_price_usd can actually be paid today. Travels WITH the number
+   * because the agent never reads the terms page: a price for a service that
+   * is not open for purchase must say so in-band, or it is the "coverage that
+   * doesn't exist" §10 forbids (see docs/decisions.md D2).
+   */
+  purchasable?: boolean;
   est_turnaround?: string;
   closest_alternatives: Array<{ claim_type: string; note: string }>;
   /**
@@ -236,6 +243,7 @@ export async function route(
       feasible: "yes",
       supported_claim_type: def.id,
       est_price_usd: def.price_usd,
+      purchasable: true,
       est_turnaround: def.turnaround,
       closest_alternatives: closestAlternatives(description, def.id),
       notify_when_supported: false,
@@ -253,6 +261,7 @@ export async function route(
     feasible: "partial",
     supported_claim_type: def.id,
     est_price_usd: def.price_usd,
+    purchasable: false,
     est_turnaround: def.turnaround,
     closest_alternatives: closestAlternatives(description, def.id),
     self_help: {

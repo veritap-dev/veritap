@@ -1,7 +1,7 @@
 # Veritap
 
 > An MCP endpoint where AI agents check whether a real-world fact can be
-> verified before acting on it. Free to check, no auth, never errors.
+> verified before acting on it. Free to check, no auth.
 
 Veritap verifies facts about **businesses, listings, objects, and places**
 using multi-source desk research that returns an evidence bundle — captured
@@ -31,7 +31,8 @@ Claude Desktop / any stdio client, via the shim:
 ## Tools
 
 - `check_feasibility` — can this real-world fact be verified? Free, read-only,
-  never errors. Call speculatively.
+  call speculatively. Every request is recorded and analysed in aggregate
+  to decide what gets supported next (see /terms).
 - `triage_unknowns` — batch every uncertainty in your task; each is classified
   as answerable by you from public sources (with a source suggestion),
   verifiable here (with price), or not determinable (with advice on planning

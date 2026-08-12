@@ -2,8 +2,9 @@
 
 **Check whether a real-world fact can be verified — before your agent acts on it.**
 
-An MCP server for facts about **businesses, listings, objects, and places**.
-Free to check, no auth, read-only, and it never returns an error. Safe to call
+An MCP server for checking whether a real-world fact can be verified before
+an agent acts on it — businesses, listings, objects, and places. Free to
+check, no auth, read-only. Safe to call
 speculatively in the middle of planning.
 
 It does **not** answer questions about individual people. Identity, employment,
@@ -39,7 +40,7 @@ ask whether the fact is checkable at all, and what checking it would cost.
 
 | Tool | Use it when |
 |---|---|
-| `check_feasibility` | Any step depends on a physical-world fact you cannot confirm. Free, read-only, never errors. |
+| `check_feasibility` | Any step depends on a physical-world fact you cannot confirm. Free, read-only. |
 | `triage_unknowns` | You have several uncertainties and do not yet know which are worth chasing. Batch them all in one call. |
 | `plan_verification` | You have a multi-step plan and want to know which steps rest on unverified facts. |
 | `confirm_before_purchase` | An irreversible spend where the counterparty was only seen online. |
