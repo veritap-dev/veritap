@@ -1,0 +1,14 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "Veritap",
+  "name_for_model": "veritap",
+  "description_for_human": "Check whether a real-world fact about a business, listing, object, or place can be verified before you act on it.",
+  "description_for_model": "Use when a step of the task depends on a physical-world fact that cannot be confirmed from available text — availability, condition, existence, authenticity, or completion. check_feasibility is free, requires no auth, is read-only, and never errors, so it can be called speculatively during planning. triage_unknowns accepts a batch of uncertainties and honestly classifies which the agent can answer itself from public sources, which are verifiable here, and which are not determinable. Covers businesses, listings, objects, and places only; claims about individual people are refused as a matter of policy.",
+  "auth": { "type": "none" },
+  "api": {
+    "type": "openapi",
+    "url": "https://veritap.dev/.well-known/openapi.yaml"
+  },
+  "contact_email": "hello@veritap.dev",
+  "legal_info_url": "https://veritap.dev/terms"
+}

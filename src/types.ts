@@ -1,0 +1,93 @@
+export interface Env {
+  DB: D1Database;
+  PUBLIC_BASE_URL: string;
+  /**
+   * "true" once the automated desk verifier (addendum A1) is wired and paid
+   * fulfillment is live. Until then the router must not quote a purchasable
+   * price, because we could not honour it (§10).
+   */
+  AUTO_VERIFIER_ENABLED?: string;
+}
+
+/** How the ask reached us. See migrations/0001_init.sql for the contract. */
+export type Origin =
+  | "organic_request"
+  | "elicited_probe"
+  | "elicited_plan"
+  | "elicited_followup";
+
+/**
+ * What happened to the ask. Orthogonal to Origin.
+ * `fulfilled_manual` does not exist: there is no human in the fulfillment loop
+ * (addendum A1). `fulfilled_auto` is the desk verifier, gated behind
+ * AUTO_VERIFIER_ENABLED until that handler ships.
+ */
+export type Outcome =
+  | "fulfilled_cache"
+  | "fulfilled_auto"
+  | "quoted_unpaid"
+  /**
+   * Catalog match we cannot answer right now (verifier off, no cache). Its own
+   * value on purpose: folding it into `quoted_unpaid` would corrupt the §7
+   * query-3 reading, where a stall means a pricing or trust objection rather
+   * than "we were not open".
+   */
+  | "deferred_no_fulfiller"
+  | "unsupported"
+  | "refused_policy";
+// `referred` is retired by A8 — no outbound referrals. Kept in the migration's
+// documentation only, and never written.
+
+export type Feasible = "yes" | "partial" | "not_yet";
+
+export interface ClaimInput {
+  claim_description: string;
+  claim_type?: string;
+  location?: { text?: string; lat?: number; lng?: number };
+  deadline?: string;
+  budget_ceiling_usd?: number;
+  downstream_action?: string;
+  cost_if_wrong?: string | number;
+  task_context?: string;
+}
+
+export interface Evidence {
+  type: string;
+  url?: string;
+  hash?: string;
+  timestamp: string;
+  geotag?: { lat: number; lng: number };
+}
+
+export interface AttestationBundle {
+  claim: string;
+  claim_type: string;
+  result: boolean | string;
+  confidence: number;
+  evidence: Evidence[];
+  method: string;
+  verifier_id: string;
+  verified_at: string;
+  valid_until: string;
+  /** Reserved (spec §3). Never populated in v1. */
+  liability: null;
+}
+
+export interface LedgerWrite {
+  tool_name: string;
+  origin: Origin;
+  outcome: Outcome;
+  parent_event_id?: number | null;
+  caller_fingerprint?: string | null;
+  input: ClaimInput;
+  claim_type?: string | null;
+  price_quoted?: number | null;
+  revenue_usd?: number | null;
+  /** Full raw request as received, before any normalization. */
+  raw?: unknown;
+  /**
+   * Write the row WITHOUT raw_input_json. Used for policy refusals, where the
+   * request text is the third-party PII we are refusing to hold (§10).
+   */
+  redacted?: boolean;
+}

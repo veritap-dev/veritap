@@ -1,0 +1,62 @@
+openapi: 3.1.0
+info:
+  title: Veritap
+  version: "0.2.0"
+  description: >
+    Check whether a real-world fact can be verified before acting on it.
+    Covers businesses, listings, objects, and places. Refuses claims about
+    individual people as a matter of policy. The primary interface is MCP
+    (Streamable HTTP) at /mcp; this document describes the read-only HTTP
+    surface for discovery.
+  contact:
+    url: https://veritap.dev
+servers:
+  - url: https://veritap.dev
+paths:
+  /mcp:
+    post:
+      operationId: mcp
+      summary: MCP Streamable HTTP endpoint (JSON-RPC 2.0)
+      description: >
+        Model Context Protocol endpoint. Tools: check_feasibility,
+        triage_unknowns, plan_verification, confirm_before_purchase,
+        request_human_check, check_physical_condition. Free, no auth,
+        read-only. Never returns a bare failure.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: A JSON-RPC 2.0 request envelope.
+      responses:
+        "200":
+          description: JSON-RPC response, as JSON or an SSE stream.
+  /health:
+    get:
+      operationId: health
+      summary: Service status and the live claim-type catalog
+      responses:
+        "200":
+          description: Status and catalog
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  service: { type: string }
+                  auto_verifier:
+                    type: boolean
+                    description: Whether automated fulfillment is currently switched on.
+                  catalog:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        claim_type: { type: string }
+                        definition: { type: string }
+                        evidence: { type: string }
+                        price_usd: { type: number }
+                        turnaround: { type: string }
+                        cache_ttl_days: { type: integer }

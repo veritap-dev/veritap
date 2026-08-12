@@ -1,0 +1,27 @@
+{
+  "name": "groundtruth-router",
+  "version": "0.1.0",
+  "private": true,
+  "description": "MCP endpoint where agents check and request real-world verification. The demand ledger is the product.",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "db:migrate:local": "wrangler d1 migrations apply groundtruth --local",
+    "db:migrate:remote": "wrangler d1 migrations apply groundtruth --remote",
+    "db:console:local": "wrangler d1 execute groundtruth --local --command",
+    "sweep": "node scripts/domain-sweep.ts",
+    "inspect": "npx @modelcontextprotocol/inspector"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
+    "agents": "^0.20.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260804.1",
+    "typescript": "^5.9.2",
+    "wrangler": "^4.120.1"
+  }
+}

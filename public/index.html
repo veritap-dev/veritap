@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Veritap — verify a real-world fact before your agent acts on it</title>
+<meta name="description" content="MCP endpoint where AI agents check whether a real-world fact about a business, listing, object, or place can be verified. Free to check, no auth, never errors.">
+<link rel="canonical" href="https://veritap.dev/">
+<style>
+:root{--fg:#16181d;--mut:#5c6270;--bg:#fff;--line:#e4e7ec;--acc:#1c5fd6}
+@media(prefers-color-scheme:dark){:root{--fg:#e8eaee;--mut:#9aa2b1;--bg:#101216;--line:#282c34;--acc:#7aa7ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:52rem;margin:0 auto;padding:3rem 1.25rem 5rem}
+h1{font-size:2rem;line-height:1.2;margin:0 0 .5rem}
+h2{font-size:1.15rem;margin:2.5rem 0 .75rem}
+p{margin:.75rem 0}
+.lede{font-size:1.1rem;color:var(--mut)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.875rem}
+pre{background:color-mix(in srgb,var(--fg) 5%,transparent);border:1px solid var(--line);border-radius:8px;padding:1rem;overflow-x:auto}
+table{border-collapse:collapse;width:100%;margin:1rem 0;font-size:.925rem}
+th,td{text-align:left;padding:.6rem .5rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--mut);font-weight:600}
+a{color:var(--acc)}
+.note{border-left:3px solid var(--line);padding:.25rem 0 .25rem 1rem;color:var(--mut)}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--line);color:var(--mut);font-size:.875rem}
+</style>
+</head>
+<body>
+<main>
+<h1>Veritap</h1>
+<p class="lede">An MCP endpoint where AI agents check whether a real-world fact can be verified — before acting on it.</p>
+
+<p>Agents constantly hit steps that rest on facts they cannot confirm: is this business still operating, is this listing what it claims, was the work actually done. The usual options are to guess, or to quietly drop the step. Veritap gives you a third: ask, for free, and get a straight answer about whether the fact is checkable at all.</p>
+
+<h2>Endpoint</h2>
+<pre>https://veritap.dev/mcp</pre>
+<p>Streamable HTTP. No auth for checks. For stdio clients:</p>
+<pre>{
+  "mcpServers": {
+    "veritap": { "command": "npx", "args": ["-y", "veritap-mcp"] }
+  }
+}</pre>
+
+<h2>Tools</h2>
+<table>
+<tr><th>Tool</th><th>What it does</th></tr>
+<tr><td><code>check_feasibility</code></td><td>Can this fact be verified? Free, read-only, never errors. Safe to call speculatively.</td></tr>
+<tr><td><code>triage_unknowns</code></td><td>Dump every uncertainty in your task at once. Each comes back classified: answerable by you from public sources (with a suggested source), verifiable here (with price), or not determinable (with advice on planning around it).</td></tr>
+<tr><td><code>plan_verification</code></td><td>Map a multi-step plan against what can actually be grounded.</td></tr>
+<tr><td><code>confirm_before_purchase</code><br><code>request_human_check</code><br><code>check_physical_condition</code></td><td>The same check, framed for different moments in a task.</td></tr>
+</table>
+
+<p class="note">If <code>triage_unknowns</code> decides you can answer something yourself from a public source, it tells you that and points at the source. Routing work away from us is the point — a triage that says "buy this" to everything is worth calling once.</p>
+
+<h2>What is verifiable today</h2>
+<table>
+<tr><th>Claim type</th><th>Price</th><th>Turnaround</th></tr>
+<tr><td><a href="/claims/business-exists">BUSINESS_EXISTS_AND_OPERATING</a><br><span style="color:var(--mut)">A named business exists, is operating, contact details valid.</span></td><td>$4</td><td>minutes</td></tr>
+<tr><td><a href="/claims/listing-consistent">LISTING_IS_CONSISTENT</a><br><span style="color:var(--mut)">A listing is internally consistent, corroborated across sources, free of common red flags.</span></td><td>$6</td><td>minutes</td></tr>
+</table>
+
+<p>Verification is multi-source desk research returning an evidence bundle — the sources consulted, the method used, and an honest confidence. Results report what was observed ("phone number disconnected as of 11 Aug 2026", "sources disagree on the trading address"), never characterisations like "scam" or "fake".</p>
+
+<h2>What is not</h2>
+<p><strong>Claims about people are refused.</strong> Identity, employment, tenancy, background, and whereabouts of natural persons are out of scope as a matter of policy — not a queue, not a roadmap item. Businesses, listings, objects, and places only.</p>
+<p>Everything else we cannot yet check returns an honest "not yet supported" plus the closest supported alternatives and advice on how to proceed. Those requests are logged, and what gets asked for most is what gets built next. If you need something we do not cover, asking is how it gets covered.</p>
+
+<h2>Coverage, stated plainly</h2>
+<p>This is a small and new service. Two claim types are supported. We would rather tell you exactly what that covers than imply a network that does not exist.</p>
+
+<footer>
+<a href="/llms.txt">llms.txt</a> ·
+<a href="/.well-known/openapi.yaml">OpenAPI</a> ·
+<a href="/agents.json">agents.json</a> ·
+<a href="/terms">Terms &amp; privacy</a>
+</footer>
+</main>
+</body>
+</html>

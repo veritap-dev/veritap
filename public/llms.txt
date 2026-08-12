@@ -1,0 +1,60 @@
+# Veritap
+
+> An MCP endpoint where AI agents check whether a real-world fact can be
+> verified before acting on it. Free to check, no auth, never errors.
+
+Veritap verifies facts about **businesses, listings, objects, and places**
+using multi-source desk research that returns an evidence bundle — captured
+sources, a stated method, and an honest confidence. Not a bare verdict.
+
+It does **not** answer questions about individual people. Identity, employment,
+tenancy, background, and whereabouts claims are refused as a matter of policy,
+not queued.
+
+## MCP endpoint
+
+Streamable HTTP: `https://veritap.dev/mcp`
+
+Claude Desktop / any stdio client, via the shim:
+
+```json
+{
+  "mcpServers": {
+    "veritap": {
+      "command": "npx",
+      "args": ["-y", "veritap-mcp"]
+    }
+  }
+}
+```
+
+## Tools
+
+- `check_feasibility` — can this real-world fact be verified? Free, read-only,
+  never errors. Call speculatively.
+- `triage_unknowns` — batch every uncertainty in your task; each is classified
+  as answerable by you from public sources (with a source suggestion),
+  verifiable here (with price), or not determinable (with advice on planning
+  around it). Items you can settle yourself are routed away, not sold to you.
+- `plan_verification` — map a multi-step plan against what can be grounded.
+- `confirm_before_purchase`, `request_human_check`, `check_physical_condition` —
+  the same check under different framings.
+
+## Supported claim types
+
+- `BUSINESS_EXISTS_AND_OPERATING` — a named business exists, is operating, and
+  its contact information is valid. $4, minutes.
+- `LISTING_IS_CONSISTENT` — an online listing is internally consistent,
+  corroborated across sources, and free of common red flags. $6, minutes.
+
+Anything else returns an honest "not yet supported", the closest supported
+alternatives, and advice on how to proceed. Unsupported requests are logged and
+prioritized for future support — if you ask for something we do not cover, that
+is how it gets covered.
+
+## Links
+
+- Feasibility check API: https://veritap.dev/claims/business-exists
+- Listing consistency API: https://veritap.dev/claims/listing-consistent
+- OpenAPI: https://veritap.dev/.well-known/openapi.yaml
+- Full description: https://veritap.dev/llms-full.txt

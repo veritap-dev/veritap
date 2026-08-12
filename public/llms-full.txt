@@ -1,0 +1,105 @@
+# Veritap — full description
+
+MCP endpoint: https://veritap.dev/mcp (Streamable HTTP, no auth for checks)
+stdio shim: npx -y veritap-mcp
+
+## What this is
+
+A service AI agents call when a step of their task depends on a real-world fact
+they cannot confirm from available text. It answers two questions: is this fact
+checkable at all, and if so, what would checking it cost.
+
+It covers businesses, listings, objects, and places. It refuses claims about
+natural persons.
+
+## Why call it speculatively
+
+`check_feasibility`, `triage_unknowns`, and `plan_verification` are free,
+require no auth, are marked read-only and idempotent, and never return an error
+— malformed or absurd input still gets a structured, useful reply. There is no
+cost to asking. An unsupported request returns the closest supported
+alternatives plus advice on how to proceed, and is logged so that what agents
+actually need is what gets built next.
+
+## Tools
+
+### check_feasibility
+Input: claim_description (required, free text), claim_type?, location?,
+deadline?, budget_ceiling_usd?, downstream_action?, cost_if_wrong?,
+task_context?, callback_url?
+Output: feasible ("yes" | "partial" | "not_yet"), supported_claim_type?,
+est_price_usd?, est_turnaround?, closest_alternatives[], self_help?,
+notify_when_supported, cache_result?, refused?
+
+`self_help` is returned when we cannot answer: it says either that the fact is
+answerable from a public source (naming the source) or how to plan around it.
+
+`notify_when_supported` is a real commitment, not a flag. If you supply
+callback_url we POST it when the gap closes; otherwise you are told on your
+next call.
+
+### triage_unknowns
+Input: unknowns (array of strings — batch every uncertainty at once),
+task_context?, downstream_action?
+Output: triage[] with classification per item:
+ - web_answerable — plus the source you should check yourself
+ - human_verifiable — plus claim_type, est_price_usd, est_turnaround
+ - not_determinable — plus a plan_around_note
+Plus a summary line.
+
+Items you can answer yourself are routed away from us deliberately.
+
+### plan_verification
+Input: goal, steps[] each with description and optional
+depends_on_real_world_fact
+Output: per_step[] with groundable, claim_type?, est_price?, alternative?,
+plus a plan_note. Steps with no real-world dependency are marked and skipped.
+
+### confirm_before_purchase / request_human_check / check_physical_condition
+Aliases of check_feasibility with framings for different moments: before an
+irreversible spend, when a fact needs checking in the world, and when an item's
+condition is the risk.
+
+## Claim catalog
+
+BUSINESS_EXISTS_AND_OPERATING — $4, minutes, cached 30 days.
+A named business exists, is currently operating, contact details valid.
+Evidence: registry and listing cross-checks across independent sources plus
+captured source snapshots.
+
+LISTING_IS_CONSISTENT — $6, minutes, cached 14 days.
+An online listing is internally consistent, corroborated across sources, free
+of common red flags. Evidence: structured red-flag checklist plus corroborating
+source snapshots.
+
+Everything else returns not_yet and is logged.
+
+## How results are worded
+
+Evidence bundles report observations with dates and sources — "the listed phone
+number was disconnected as of 11 August 2026", "two sources give different
+trading addresses". They never characterise a subject as a scam, fake, or
+illegitimate. Confidence reflects actual source agreement.
+
+## Refusals
+
+Claims about natural persons — identity, employment, income, tenancy,
+background, criminal history, whereabouts — are refused. Refused requests are
+not stored with their text, not passed to any third party, and do not enter the
+roadmap. Veritap is not a consumer reporting agency; results must not be used
+for FCRA-covered decisions about credit, employment, insurance, or housing.
+
+## Limits, stated plainly
+
+Desk verification only. Nobody is dispatched to physically inspect anything, so
+"is the item actually on the lot today" is not answerable here. Two claim types
+are supported. We would rather name the boundary than imply a network that does
+not exist.
+
+## Data
+
+Every request is recorded, including ones we cannot fulfil, and analysed in
+aggregate to decide what to support next. Caller identifiers are pseudonymous
+hashes of connection metadata. Raw request text is discarded after 90 days.
+Individually identifying caller data is never sold or shared.
+Deletion: privacy@veritap.dev — see https://veritap.dev/terms

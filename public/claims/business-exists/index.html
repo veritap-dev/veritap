@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verify a business exists and is operating — API for AI agents | Veritap</title>
+<meta name="description" content="API to verify that a named business exists, is currently operating, and has valid contact details. Returns an evidence bundle. $4, minutes. MCP endpoint, free feasibility check.">
+<link rel="canonical" href="https://veritap.dev/claims/business-exists">
+<style>
+:root{--fg:#16181d;--mut:#5c6270;--bg:#fff;--line:#e4e7ec;--acc:#1c5fd6}
+@media(prefers-color-scheme:dark){:root{--fg:#e8eaee;--mut:#9aa2b1;--bg:#101216;--line:#282c34;--acc:#7aa7ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{max-width:52rem;margin:0 auto;padding:3rem 1.25rem 5rem}
+h1{font-size:1.75rem;line-height:1.25;margin:0 0 .5rem}
+h2{font-size:1.1rem;margin:2rem 0 .5rem}
+.lede{font-size:1.05rem;color:var(--mut)}
+code,pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.875rem}
+pre{background:color-mix(in srgb,var(--fg) 5%,transparent);border:1px solid var(--line);border-radius:8px;padding:1rem;overflow-x:auto}
+ul{padding-left:1.1rem}
+a{color:var(--acc)}
+footer{margin-top:3rem;padding-top:1.5rem;border-top:1px solid var(--line);color:var(--mut);font-size:.875rem}
+</style>
+</head>
+<body>
+<main>
+<p><a href="/">Veritap</a></p>
+<h1>Verify a business exists and is operating</h1>
+<p class="lede"><code>BUSINESS_EXISTS_AND_OPERATING</code> — $4, answered in minutes, cached 30 days.</p>
+
+<h2>What it settles</h2>
+<p>That a named business exists, is currently operating rather than closed or dormant, and that the contact details you hold for it are valid.</p>
+
+<h2>When an agent should call it</h2>
+<ul>
+<li>Before sending money, goods, or a customer to a business seen only online.</li>
+<li>Before relying on a supplier, contractor, or vendor found in search results.</li>
+<li>When a directory listing looks stale and the decision downstream is expensive.</li>
+</ul>
+
+<h2>Evidence returned</h2>
+<p>Registry and listing cross-checks across independent sources, plus captured source snapshots. The bundle states the method used, the sources consulted, and a confidence derived from how well those sources agree — not a default high number.</p>
+<p>Findings are reported as observations: "listed as dissolved in the state registry as of 4 Aug 2026", "two sources give different trading addresses". Never as characterisations like "scam" or "not legitimate".</p>
+
+<h2>Call it</h2>
+<pre>// MCP, https://veritap.dev/mcp
+check_feasibility({
+  claim_description: "Is Bright Star Plumbing LLC in Nashville still operating?",
+  location: { text: "Nashville, TN" },
+  downstream_action: "dispatch a customer booking"
+})</pre>
+<p>The feasibility check is free, needs no auth, and never errors. If the claim is not something we can settle, it says so and tells you what would help instead.</p>
+
+<h2>Limits</h2>
+<p>This is a desk verification of a <em>business</em>. It does not confirm anything about the people who run it — owner identity, background, and employment are refused as a matter of policy. It also does not confirm the physical state of premises; nobody is sent to look.</p>
+
+<footer><a href="/">Home</a> · <a href="/claims/listing-consistent">Listing consistency</a> · <a href="/terms">Terms &amp; privacy</a></footer>
+</main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "groundtruth-router",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // Stateless MCP (createMcpHandler) — no Durable Objects binding required.
+  // Everything durable lives in D1; the Worker holds no per-session state.
+  "observability": { "enabled": true },
+
+  // The workers.dev subdomain is per-ACCOUNT, so publishing on it would place
+  // this Worker next to every other Worker on the account — a direct
+  // account-level link, stronger than the nameserver pair we accepted.
+  // Custom domain only. See docs/decisions.md.
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{ "pattern": "veritap.dev", "custom_domain": true }],
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "groundtruth",
+      "database_id": "014b374c-d28a-4989-8ad3-4ab6ff108340",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Static agent-legible surface (ticket 9): llms.txt, openapi.yaml,
+  // .well-known/*, per-claim-type HTML. Assets are served first; anything
+  // unmatched falls through to the Worker, which owns /mcp.
+  "assets": {
+    "directory": "public",
+    "not_found_handling": "none",
+    // Serve /claims/business-exists directly rather than 307-ing to the
+    // trailing-slash form — the canonical tags and sitemap use the bare path,
+    // and an extra hop weakens the discovery signal these pages exist for.
+    "html_handling": "drop-trailing-slash"
+  },
+
+  // Nightly retention sweep: nulls raw_input_json older than 90 days (§7).
+  "triggers": { "crons": ["17 4 * * *"] },
+
+  "vars": {
+    // Flip to "true" only when the auto desk verifier (A1) is actually wired.
+    // Until then the router must not quote a purchasable price (§10).
+    "AUTO_VERIFIER_ENABLED": "false",
+
+    // No REFERRAL_* vars: A8 removed outbound referrals entirely. A miss keeps
+    // its signal in-house and is answered with alternatives + self-help + a
+    // real report-back promise (see src/notify.ts).
+    "PUBLIC_BASE_URL": "https://veritap.dev"
+  }
+}
