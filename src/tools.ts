@@ -407,7 +407,9 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
       const rows: LedgerWrite[] = [];
       const notifies: string[] = [];
       for (const [i, item] of triage.entries()) {
-        const supplied = items[i];
+        // Same index space as `triage` by construction; the fallback is for
+        // the indexed-access checker, not a reachable state.
+        const supplied = items[i] ?? { claim: item.unknown };
         const refused = Boolean(item.refused_category);
         rows.push({
           tool_name: "triage_unknowns",
