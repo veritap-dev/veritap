@@ -31,7 +31,10 @@ function createServer(
   // read it when deciding what to call. `groundtruth-router` stays the Worker
   // and repo name; the wire identity is the brand.
   const server = new McpServer(
-    { name: "veritap", version: "0.2.0" },
+    // Version must track npm/server.json/lhm.plugin.json — directories
+    // (Smithery, LobeHub) display what initialize reports, and a drifting
+    // wire version reads as an unmaintained or mismatched listing.
+    { name: "veritap", version: "0.1.3" },
     { instructions: INSTRUCTIONS },
   );
   registerTools(server, env, ctx.requestInfo, client);
