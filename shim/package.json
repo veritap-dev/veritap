@@ -1,12 +1,20 @@
 {
   "name": "veritap-mcp",
-  "version": "0.1.0",
+  "mcpName": "dev.veritap/veritap",
+  "version": "0.1.1",
   "description": "MCP server for checking whether a real-world fact about a business, listing, object, or place can be verified before an AI agent acts on it. Free to check, no auth, never errors.",
   "type": "module",
-  "bin": { "veritap-mcp": "index.mjs" },
+  "bin": {
+    "veritap-mcp": "index.mjs"
+  },
   "main": "index.mjs",
-  "files": ["index.mjs", "README.md"],
-  "engines": { "node": ">=18" },
+  "files": [
+    "index.mjs",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "keywords": [
     "mcp",
     "model-context-protocol",
