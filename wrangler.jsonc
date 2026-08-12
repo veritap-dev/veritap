@@ -41,7 +41,14 @@
   // Nightly retention sweep: nulls raw_input_json older than 90 days (§7).
   "triggers": { "crons": ["17 4 * * *"] },
 
+  // A15 layer 3: breaker alert. send_email can only deliver to a pre-verified
+  // destination address, so this binding cannot be abused as a relay.
+  "send_email": [
+    { "name": "SEND_EMAIL", "destination_address": "[operator email — redacted]" }
+  ],
+
   "vars": {
+    "ALERT_EMAIL": "[operator email — redacted]",
     // Flip to "true" only when the auto desk verifier (A1) is actually wired.
     // Until then the router must not quote a purchasable price (§10).
     "AUTO_VERIFIER_ENABLED": "false",

@@ -1,6 +1,9 @@
 export interface Env {
   DB: D1Database;
   PUBLIC_BASE_URL: string;
+  /** A15 layer 3: Cloudflare send_email binding for the breaker alert. */
+  SEND_EMAIL?: { send(message: unknown): Promise<void> };
+  ALERT_EMAIL?: string;
   /**
    * "true" once the automated desk verifier (addendum A1) is wired and paid
    * fulfillment is live. Until then the router must not quote a purchasable
@@ -85,9 +88,21 @@ export interface LedgerWrite {
   revenue_usd?: number | null;
   /** Full raw request as received, before any normalization. */
   raw?: unknown;
+  /** A15 layer 2: row written while the caller was over threshold. */
+  suspect?: boolean;
+  /** A15 layer 3: breaker open — count it, do not store it. */
+  degraded?: boolean;
   /**
    * Write the row WITHOUT raw_input_json. Used for policy refusals, where the
    * request text is the third-party PII we are refusing to hold (§10).
    */
   redacted?: boolean;
+}
+
+/** Per-call rate assessment (A15). Never visible to the caller. */
+export interface CallerAssessment {
+  /** Over the per-fingerprint hourly threshold: tag rows written from here on. */
+  suspect: boolean;
+  /** Global daily breaker is open: answer normally, store aggregates only. */
+  degraded: boolean;
 }

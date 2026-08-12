@@ -11,11 +11,11 @@ import type { McpServer } from "@modelcontextprotocol/server";
 import { z } from "zod";
 
 import { route } from "./router.ts";
-import { deriveFingerprint, touchCaller, writeLedger } from "./ledger.ts";
+import { assessCaller, deriveFingerprint, touchCaller, writeLedger } from "./ledger.ts";
 import { matchClaimType } from "./catalog.ts";
 import { classifyUnknown, summarize } from "./triage.ts";
 import { drainPending, registerNotify } from "./notify.ts";
-import type { ClaimInput, Env } from "./types.ts";
+import type { CallerAssessment, ClaimInput, Env } from "./types.ts";
 
 export const INSTRUCTIONS = `This server verifies real-world facts about businesses, listings, objects, and places. Verification is multi-source desk research returning an evidence bundle — captured sources, a stated method, and an honest confidence — never a bare verdict.
 
@@ -117,16 +117,25 @@ Use when a decision depends on an item being in the condition a listing claims. 
   },
 ];
 
-async function identify(env: Env, request: Request | undefined) {
-  if (!request) return null;
+/**
+ * Identify + rate-assess in one pass, ONCE per tool call (A15). Doing this
+ * per-row would mean up to 50 rate queries for a single triage_unknowns call.
+ */
+async function identify(
+  env: Env,
+  request: Request | undefined,
+): Promise<{ fingerprint: string | null; assessment: CallerAssessment }> {
+  let fingerprint: string | null = null;
   try {
-    const fingerprint = await deriveFingerprint(request);
-    await touchCaller(env, fingerprint);
-    return fingerprint;
+    if (request) {
+      fingerprint = await deriveFingerprint(request);
+      await touchCaller(env, fingerprint);
+    }
   } catch (err) {
     console.error("FINGERPRINT_FAILED", { error: String(err) });
-    return null;
   }
+  const assessment = await assessCaller(env, fingerprint);
+  return { fingerprint, assessment };
 }
 
 const asText = (payload: unknown) => ({
@@ -164,12 +173,13 @@ export function registerTools(server: McpServer, env: Env, request: Request | un
       },
       async (args) => {
         const input = args as ClaimInput & { callback_url?: string };
-        const fingerprint = await identify(env, request);
+        const { fingerprint, assessment } = await identify(env, request);
         const result = await route(env, input, {
           toolName: doorway.name,
           origin: "elicited_probe",
           fingerprint,
           raw: args,
+          assessment,
         });
 
         // A8: the miss stays ours, so the promise to report back has to be real.
@@ -220,7 +230,7 @@ Pass your whole plan, including steps you have not decomposed into questions yet
         goal: string;
         steps: Array<{ description: string; depends_on_real_world_fact?: string }>;
       };
-      const fingerprint = await identify(env, request);
+      const { fingerprint, assessment } = await identify(env, request);
 
       const per_step = [];
       for (const [index, step] of steps.entries()) {
@@ -248,6 +258,7 @@ Pass your whole plan, including steps you have not decomposed into questions yet
             origin: "elicited_plan",
             fingerprint,
             raw: { goal, step, step_index: index },
+            assessment,
           },
         );
 
@@ -315,7 +326,7 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
         task_context?: string;
         downstream_action?: string;
       };
-      const fingerprint = await identify(env, request);
+      const { fingerprint, assessment } = await identify(env, request);
       const triage = unknowns.map(classifyUnknown);
 
       // Every unknown is a demand event, including the ones we route away.
@@ -332,6 +343,8 @@ Dump every uncertainty at once, mid-reasoning, before deciding which are worth c
           caller_fingerprint: fingerprint,
           claim_type: item.claim_type ?? null,
           price_quoted: item.est_price_usd ?? null,
+          suspect: assessment.suspect,
+          degraded: assessment.degraded,
           redacted: refused,
           raw: refused ? undefined : { item, task_context, downstream_action },
           input: refused

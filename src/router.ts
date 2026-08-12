@@ -15,6 +15,7 @@ import { checkPolicy, refusalMessage } from "./policy.ts";
 import { classifyUnknown } from "./triage.ts";
 import type {
   AttestationBundle,
+  CallerAssessment,
   ClaimInput,
   Env,
   Feasible,
@@ -102,6 +103,8 @@ export interface RouteOptions {
   fingerprint: string | null;
   parentEventId?: number | null;
   raw?: unknown;
+  /** A15: computed once per call by assessCaller, applied to every row here. */
+  assessment?: CallerAssessment;
 }
 
 /**
@@ -146,6 +149,8 @@ export async function route(
       claim_type: claimType,
       price_quoted: priceQuoted,
       raw: opts.raw,
+      suspect: opts.assessment?.suspect,
+      degraded: opts.assessment?.degraded,
       ...override,
     };
     return writeLedger(env, w);
