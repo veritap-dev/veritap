@@ -1,0 +1,11 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "veritap",
+  "version": "0.1.3",
+  "description": "Check whether a real-world fact can be verified before an agent acts on it. Business-exists claims answered free with dated registry evidence (GLEIF, SEC EDGAR, Wikidata). Claims about individual people are refused by policy.",
+  "author": "Veritap",
+  "homepage": "https://veritap.dev",
+  "repository": "https://github.com/veritap-dev/veritap",
+  "license": "MIT",
+  "keywords": ["mcp", "verification", "fact-checking", "due-diligence", "ai-agents"]
+}
