@@ -71,7 +71,13 @@ Gates that must pass before any deploy:
 npx tsc --noEmit
 node scripts/a3-audit.mjs      # honesty: no dispatch, no referral, no purchasability
 node scripts/policy-check.ts   # people-claim gate, both directions
+./scripts/history-scan.sh      # secrets across git HISTORY, before any public push
 ```
+
+`history-scan.sh` exists because a working-tree audit cannot catch what a
+public push actually exposes. Grepping `git ls-files` only ever sees the
+current checkout — it passes happily while earlier commits, and commit
+messages, still carry the thing you removed.
 
 Secrets are never committed. `ALERT_EMAIL` and `NTFY_TOPIC` are set with
 `wrangler secret put` — the ntfy topic in particular is a capability, since
