@@ -44,14 +44,19 @@
   // would report a breach long after traffic was already being dropped.
   "triggers": { "crons": ["17 4 * * *", "0 * * * *"] },
 
-  // A15 layer 3: breaker alert. send_email can only deliver to a pre-verified
-  // destination address, so this binding cannot be abused as a relay.
-  "send_email": [
-    { "name": "SEND_EMAIL", "destination_address": "[operator email — redacted]" }
-  ],
+  // A15 layer 3: breaker alert. send_email can only ever deliver to an address
+  // already VERIFIED as an Email Routing destination on this account, so it
+  // cannot be abused as a relay no matter what reaches it. No address is named
+  // here on purpose — the recipient comes from the ALERT_EMAIL secret, which
+  // keeps a personal address out of a public repository.
+  "send_email": [{ "name": "SEND_EMAIL" }],
 
+  // SECRETS (set with `wrangler secret put`, never committed):
+  //   ALERT_EMAIL  operator address for breaker + usage alerts
+  //   NTFY_TOPIC   daily digest topic. ntfy topics are unauthenticated, so the
+  //                string is a capability: anyone holding it can read the
+  //                digest AND publish alerts to the phone. Treat as a secret.
   "vars": {
-    "ALERT_EMAIL": "[operator email — redacted]",
     // Flip to "true" only when the auto desk verifier (A1) is actually wired.
     // Until then the router must not quote a purchasable price (§10).
     "AUTO_VERIFIER_ENABLED": "false",
@@ -59,11 +64,6 @@
     // No REFERRAL_* vars: A8 removed outbound referrals entirely. A miss keeps
     // its signal in-house and is answered with alternatives + self-help + a
     // real report-back promise (see src/notify.ts).
-    // A16: daily operator digest. Counts only — no claim text ever leaves
-    // the Access-protected path. Unguessable so the topic is not readable by
-    // anyone who guesses "veritap".
-    "NTFY_TOPIC": "[ntfy topic — rotated and redacted]",
-
     "PUBLIC_BASE_URL": "https://veritap.dev"
   }
 }
