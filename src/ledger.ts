@@ -182,8 +182,9 @@ export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | nu
          ts, tool_name, origin, parent_event_id, caller_fingerprint,
          claim_description, claim_type, location_text, lat, lng,
          budget_ceiling_usd, deadline, downstream_action, cost_if_wrong, task_context,
-         outcome, price_quoted, revenue_usd, raw_input_json, suspect
-       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+         outcome, price_quoted, revenue_usd, raw_input_json, suspect,
+         client_name, client_version, client_ua, protocol_version
+       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
        RETURNING id`,
     )
       .bind(
@@ -208,6 +209,10 @@ export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | nu
         // Refusals are recorded as events, never as content.
         w.redacted ? null : JSON.stringify(w.raw ?? w.input),
         w.suspect ? 1 : 0,
+        w.client?.name ?? null,
+        w.client?.version ?? null,
+        w.client?.userAgent ?? null,
+        w.client?.protocol ?? null,
       )
       .first<{ id: number }>();
 
@@ -226,20 +231,66 @@ export async function writeLedger(env: Env, w: LedgerWrite): Promise<number | nu
   }
 }
 
-/** Upsert the caller row. Best-effort; never blocks a response. */
-export async function touchCaller(env: Env, fingerprint: string): Promise<void> {
+/**
+ * Upsert the caller row and remember what software it is.
+ *
+ * COALESCE on update, never overwrite-with-null: legacy-era clients announce
+ * themselves once at initialize and are anonymous on every subsequent call, so
+ * a naive UPDATE would erase the one moment they told us who they were.
+ *
+ * Returns the caller's known identity so tool calls that carry none can
+ * inherit it.
+ */
+export async function touchCaller(
+  env: Env,
+  fingerprint: string,
+  client?: { name?: string; version?: string; userAgent?: string; protocol?: string },
+): Promise<{ name?: string; version?: string; userAgent?: string; protocol?: string }> {
   const now = new Date().toISOString();
   try {
     await env.DB.prepare(
-      `INSERT INTO callers (fingerprint, first_seen, last_seen, call_count)
-       VALUES (?1, ?2, ?2, 1)
+      `INSERT INTO callers
+         (fingerprint, first_seen, last_seen, call_count,
+          client_name, client_version, user_agent, protocol_version)
+       VALUES (?1, ?2, ?2, 1, ?3, ?4, ?5, ?6)
        ON CONFLICT(fingerprint) DO UPDATE SET
          last_seen = ?2,
-         call_count = call_count + 1`,
+         call_count = call_count + 1,
+         client_name      = COALESCE(?3, client_name),
+         client_version   = COALESCE(?4, client_version),
+         user_agent       = COALESCE(?5, user_agent),
+         protocol_version = COALESCE(?6, protocol_version)`,
     )
-      .bind(fingerprint, now)
+      .bind(
+        fingerprint,
+        now,
+        client?.name ?? null,
+        client?.version ?? null,
+        client?.userAgent ?? null,
+        client?.protocol ?? null,
+      )
       .run();
+
+    const row = await env.DB.prepare(
+      `SELECT client_name, client_version, user_agent, protocol_version
+         FROM callers WHERE fingerprint = ?`,
+    )
+      .bind(fingerprint)
+      .first<{
+        client_name: string | null;
+        client_version: string | null;
+        user_agent: string | null;
+        protocol_version: string | null;
+      }>();
+
+    return {
+      name: client?.name ?? row?.client_name ?? undefined,
+      version: client?.version ?? row?.client_version ?? undefined,
+      userAgent: client?.userAgent ?? row?.user_agent ?? undefined,
+      protocol: client?.protocol ?? row?.protocol_version ?? undefined,
+    };
   } catch (err) {
     console.error("CALLER_TOUCH_FAILED", { error: String(err) });
+    return client ?? {};
   }
 }

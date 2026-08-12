@@ -88,6 +88,8 @@ export interface LedgerWrite {
   revenue_usd?: number | null;
   /** Full raw request as received, before any normalization. */
   raw?: unknown;
+  /** Who called: components, deliberately not folded into the fingerprint. */
+  client?: { name?: string; version?: string; userAgent?: string; protocol?: string };
   /** A15 layer 2: row written while the caller was over threshold. */
   suspect?: boolean;
   /** A15 layer 3: breaker open — count it, do not store it. */

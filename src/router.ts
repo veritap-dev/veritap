@@ -105,6 +105,8 @@ export interface RouteOptions {
   raw?: unknown;
   /** A15: computed once per call by assessCaller, applied to every row here. */
   assessment?: CallerAssessment;
+  /** Who called — components, recorded on every row. */
+  client?: { name?: string; version?: string; userAgent?: string; protocol?: string };
 }
 
 /**
@@ -151,6 +153,7 @@ export async function route(
       raw: opts.raw,
       suspect: opts.assessment?.suspect,
       degraded: opts.assessment?.degraded,
+      client: opts.client,
       ...override,
     };
     return writeLedger(env, w);

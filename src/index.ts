@@ -13,12 +13,17 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { createMcpHandler } from "agents/mcp/server";
 
 import { catalogSummary } from "./router.ts";
-import { deriveFingerprint } from "./ledger.ts";
+import { deriveFingerprint, touchCaller } from "./ledger.ts";
 import { INSTRUCTIONS, registerTools } from "./tools.ts";
 import { sweepNotifications } from "./notify.ts";
+import { readClientContext, hasIdentity, type ClientContext } from "./client.ts";
 import type { Env } from "./types.ts";
 
-function createServer(ctx: { requestInfo?: Request }, env: Env): McpServer {
+function createServer(
+  ctx: { requestInfo?: Request },
+  env: Env,
+  client: ClientContext | undefined,
+): McpServer {
   // §9: the server name is tool-selection signal, not just a label — models
   // read it when deciding what to call. `groundtruth-router` stays the Worker
   // and repo name; the wire identity is the brand.
@@ -26,7 +31,7 @@ function createServer(ctx: { requestInfo?: Request }, env: Env): McpServer {
     { name: "veritap", version: "0.2.0" },
     { instructions: INSTRUCTIONS },
   );
-  registerTools(server, env, ctx.requestInfo);
+  registerTools(server, env, ctx.requestInfo, client);
   return server;
 }
 
@@ -36,20 +41,28 @@ function createServer(ctx: { requestInfo?: Request }, env: Env): McpServer {
  * method off a clone of the body before delegating. Kept OUT of demand_ledger
  * so inspections cannot inflate the §12 demand metrics.
  */
-async function recordInspection(request: Request, env: Env): Promise<void> {
+async function recordInspection(
+  request: Request,
+  env: Env,
+  client: ClientContext,
+): Promise<void> {
   try {
-    const body = (await request.clone().json()) as { method?: string };
-    if (body?.method !== "tools/list") return;
+    if (client.method !== "tools/list" && client.method !== "initialize") return;
 
     await env.DB.prepare(
-      `INSERT INTO inspections (ts, method, caller_fingerprint, user_agent)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO inspections
+         (ts, method, caller_fingerprint, user_agent,
+          client_name, client_version, protocol_version)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         new Date().toISOString(),
-        body.method,
+        client.method,
         await deriveFingerprint(request),
-        request.headers.get("user-agent") ?? null,
+        client.userAgent ?? null,
+        client.name ?? null,
+        client.version ?? null,
+        client.protocol ?? null,
       )
       .run();
   } catch {
@@ -93,13 +106,33 @@ export default {
     const url = new URL(request.url);
 
     if (url.pathname === "/mcp") {
+      // Parse identity ONCE per request and hand it down, rather than cloning
+      // and re-parsing the body in each consumer.
+      let client: ClientContext = {};
       if (request.method === "POST") {
-        ctx.waitUntil(recordInspection(request, env));
+        try {
+          client = readClientContext(await request.clone().json(), request);
+        } catch {
+          client = readClientContext(undefined, request);
+        }
+        ctx.waitUntil(recordInspection(request, env, client));
+        // A 2025-era client announces itself ONLY here, so this write is
+        // awaited rather than deferred: with waitUntil, a client that calls a
+        // tool immediately after initialize races the write and its first row
+        // lands unattributed. initialize happens once per session, so paying
+        // the write latency here buys reliable attribution from the first call.
+        if (client.method === "initialize" && hasIdentity(client)) {
+          try {
+            await touchCaller(env, await deriveFingerprint(request), client);
+          } catch {
+            // Identity is best-effort; never fail a handshake over it.
+          }
+        }
       }
       // Built per request so `env` is captured by closure. A module-scope
       // handler would have to stash env on globalThis, which races across
       // concurrent requests sharing the isolate.
-      const mcpHandler = createMcpHandler((mcpCtx) => createServer(mcpCtx, env), {
+      const mcpHandler = createMcpHandler((mcpCtx) => createServer(mcpCtx, env, client), {
         route: "/mcp",
       });
       return mcpHandler(request, env, ctx);
