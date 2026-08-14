@@ -32,6 +32,9 @@ SELECT strftime('%Y-W%W', ts)          AS week,
  WHERE claim_type IS NULL
    AND outcome != 'refused_policy'
    AND suspect = 0
+   -- liveness pings ("test" etc.) are health checks, not demand shapes
+   AND NOT (length(trim(claim_description)) <= 6
+            AND task_context IS NULL AND downstream_action IS NULL)
  GROUP BY 1
  ORDER BY 1 DESC;
 
@@ -39,6 +42,8 @@ SELECT '— sample of current uncatalogued shapes (build-next backlog) —' AS m
 SELECT claim_description, tool_name, ts
   FROM demand_ledger
  WHERE claim_type IS NULL AND outcome != 'refused_policy' AND suspect = 0
+   AND NOT (length(trim(claim_description)) <= 6
+            AND task_context IS NULL AND downstream_action IS NULL)
  ORDER BY ts DESC
  LIMIT 20;
 

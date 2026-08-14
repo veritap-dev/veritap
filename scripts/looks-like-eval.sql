@@ -50,3 +50,22 @@ SELECT fp,
        END AS verdict
   FROM per_caller
  ORDER BY verdict, total_rows DESC;
+
+-- ── Liveness pings ──────────────────────────────────────────────────────────
+-- Found in production 2026-08-13: directory census crawlers (first sighting:
+-- SaSame-MCP-Audit) verify listed servers daily with the minimal valid call —
+-- claim_description "test", no context, one call per visit. Touches zero
+-- catalog types and zero refusals, so the probe signature above scores it
+-- demand-like. This section names them separately.
+SELECT '— liveness pings (directory health checks, not demand) —' AS section;
+SELECT caller_fingerprint                       AS fp,
+       COALESCE(client_name, client_ua, '?')    AS who,
+       count(*)                                 AS pings,
+       min(ts)                                  AS first_seen,
+       max(ts)                                  AS last_seen
+  FROM demand_ledger
+ WHERE length(trim(claim_description)) <= 6
+   AND task_context IS NULL AND downstream_action IS NULL
+   AND claim_type IS NULL
+ GROUP BY 1, 2
+ ORDER BY pings DESC;
