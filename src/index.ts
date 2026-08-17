@@ -20,6 +20,8 @@ import { sendAlert } from "./alerts.ts";
 import { handleAdmin } from "./admin.ts";
 import { dailyDigest } from "./digest.ts";
 import { readClientContext, hasIdentity, type ClientContext } from "./client.ts";
+import { FAVICON_32_B64, LOGO_512_B64, OG_B64 } from "./brand-assets.ts";
+import { landingPage, hubPage, docsPage, privacyPage, termsPage } from "./pages.ts";
 import type { Env } from "./types.ts";
 
 function createServer(
@@ -288,6 +290,31 @@ export default {
         auto_verifier: env.AUTO_VERIFIER_ENABLED === "true",
         catalog: catalogSummary(),
       });
+    }
+
+    // ---- brand assets (rebrand) ----
+    const png = (b64: string) =>
+      new Response(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0)), {
+        headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=86400" },
+      });
+    if (url.pathname === "/favicon.ico") return png(FAVICON_32_B64);
+    if (url.pathname === "/logo.png") return png(LOGO_512_B64);
+    if (url.pathname === "/og.png") return png(OG_B64);
+    const html = (body: string) =>
+      new Response(body, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+
+    // ---- compliance / docs pages (Verify's canonical base is verify.veritap.dev) ----
+    const VERIFY = "https://verify.veritap.dev";
+    if (url.pathname === "/docs") return html(docsPage(VERIFY));
+    if (url.pathname === "/privacy") return html(privacyPage(VERIFY));
+    if (url.pathname === "/terms") return html(termsPage(VERIFY));
+
+    // ---- root: apex = brand hub; verify subdomain = landing; agents get JSON ----
+    if (url.pathname === "/") {
+      const wantsHtml = (request.headers.get("accept") ?? "").includes("text/html");
+      if (url.hostname === "veritap.dev") return wantsHtml ? html(hubPage()) : Response.json({ service: "veritap", products: { verify: `${VERIFY}/mcp`, locker: "https://locker.veritap.dev/mcp" } });
+      if (wantsHtml) return html(landingPage(VERIFY));
+      return Response.json({ service: "veritap-verify", mcp: `${VERIFY}/mcp`, docs: `${VERIFY}/docs`, free: true });
     }
 
     return Response.json(

@@ -32,7 +32,7 @@ Before acting on a plan, list the real-world facts you are uncertain about and t
 
 If a step depends on a physical-world fact you cannot confirm — availability, condition, existence, authenticity, completion — call check_feasibility, even speculatively; it never fails. Unsupported requests are logged and drive what gets supported next. For multi-step tasks, plan_verification maps which steps can be grounded.
 
-Every request is recorded and analysed in aggregate to decide what gets supported next; claims about individuals are logged without their text. Full terms: https://veritap.dev/terms`;
+Every request is recorded and analysed in aggregate to decide what gets supported next; claims about individuals are logged without their text. Docs: https://verify.veritap.dev/docs · Full terms: https://verify.veritap.dev/terms`;
 
 /**
  * Appended to every tool description. A reviewer working from tools/list alone

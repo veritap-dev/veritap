@@ -39,6 +39,10 @@
   "assets": {
     "directory": "public",
     "not_found_handling": "none",
+    // Rebrand: the Worker owns the primary human pages (host-aware hub vs
+    // landing + the new brand assets) so verify.veritap.dev and the apex can
+    // differ; the SEO claim-pages, sitemap, css, llms.txt stay static.
+    "run_worker_first": ["/", "/docs", "/privacy", "/terms", "/logo.png", "/favicon.ico", "/og.png"],
     // Serve /claims/business-exists directly rather than 307-ing to the
     // trailing-slash form — the canonical tags and sitemap use the bare path,
     // and an extra hop weakens the discovery signal these pages exist for.
