@@ -29,12 +29,14 @@ function createServer(
 ): McpServer {
   // §9: the server name is tool-selection signal, not just a label — models
   // read it when deciding what to call. `groundtruth-router` stays the Worker
-  // and repo name; the wire identity is the brand.
+  // and repo name; the wire identity is the brand: Veritap Verify (rebrand
+  // 2026-08-17). Registry name (dev.veritap/veritap) + npm (veritap-mcp)
+  // deliberately unchanged to avoid orphaning listings.
   const server = new McpServer(
     // Version must track npm/server.json/lhm.plugin.json — directories
     // (Smithery, LobeHub) display what initialize reports, and a drifting
     // wire version reads as an unmaintained or mismatched listing.
-    { name: "veritap", version: "0.1.3" },
+    { name: "veritap-verify", version: "0.2.0" },
     { instructions: INSTRUCTIONS },
   );
   registerTools(server, env, ctx.requestInfo, client);
@@ -226,11 +228,16 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
 
-    // Non-canonical hosts 301 to the apex. The bare domain is the identity
-    // that registries and installed client configs pin; www exists only so
-    // typing it doesn't dead-end.
-    if (url.hostname !== "veritap.dev" && url.hostname.endsWith("veritap.dev")) {
-      url.hostname = "veritap.dev";
+    // Rebrand 2026-08-17: verify.veritap.dev is Verify's canonical home; the
+    // apex veritap.dev keeps serving (back-compat for pinned /mcp configs, and
+    // it becomes the brand hub). Only stray hosts (www, etc.) 301 — to the new
+    // canonical, not the apex.
+    if (
+      url.hostname !== "verify.veritap.dev" &&
+      url.hostname !== "veritap.dev" &&
+      url.hostname.endsWith("veritap.dev")
+    ) {
+      url.hostname = "verify.veritap.dev";
       return Response.redirect(url.toString(), 301);
     }
 

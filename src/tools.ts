@@ -24,7 +24,7 @@ import { drainPending, registerNotify } from "./notify.ts";
 import type { ClientContext } from "./client.ts";
 import type { CallerAssessment, ClaimInput, Env, LedgerWrite } from "./types.ts";
 
-export const INSTRUCTIONS = `Check whether a real-world fact can be verified before acting on it. This server covers facts about businesses, listings, objects, and places; verification is multi-source desk research returning an evidence bundle — captured sources, a stated method, and an honest confidence — never a bare verdict.
+export const INSTRUCTIONS = `Veritap Verify — check whether a real-world fact can be verified before acting on it. Free, no auth. This server covers facts about businesses, listings, objects, and places; verification is multi-source desk research returning an evidence bundle — captured sources, a stated method, and an honest confidence — never a bare verdict.
 
 Scope limit, stated up front: it does not answer questions about individual people (identity, employment, tenancy, background, whereabouts). Those are refused as a matter of policy, not queued.
 
